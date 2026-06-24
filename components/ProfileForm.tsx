@@ -47,6 +47,7 @@ export default function ProfileForm() {
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
             value={formData.username}
             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+            suppressHydrationWarning
           />
           {errors.username && <p className="text-red-400 text-xs mt-1">{errors.username}</p>}
         </div>
@@ -58,6 +59,7 @@ export default function ProfileForm() {
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            suppressHydrationWarning
           />
           {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
         </div>
@@ -68,6 +70,7 @@ export default function ProfileForm() {
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
             value={formData.role}
             onChange={(e) => setFormData({ ...formData, role: e.target.value as UserProfileInput["role"] })}
+            suppressHydrationWarning
           >
             <option value="user">User</option>
             <option value="admin">Admin</option>
@@ -78,6 +81,7 @@ export default function ProfileForm() {
         <button
           type="submit"
           className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold py-2 px-4 rounded-lg transition duration-200"
+          suppressHydrationWarning
         >
           Submit & Save in Zustand
         </button>

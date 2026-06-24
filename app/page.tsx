@@ -1,4 +1,6 @@
+import { UserButton } from "@clerk/nextjs";
 import ProfileForm from "../components/ProfileForm";
+import BackendProfile from "../components/BackendProfile";
 
 export default function Home() {
   return (
@@ -19,9 +21,11 @@ export default function Home() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               Workspace Active
             </span>
+            <UserButton />
           </div>
         </div>
       </header>
+
 
       {/* Main Content */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-12 flex flex-col lg:flex-row items-center lg:items-stretch gap-12 justify-center">
@@ -62,7 +66,8 @@ export default function Home() {
         </div>
 
         {/* Demo App Column */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center">
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center gap-6">
+          <BackendProfile />
           <ProfileForm />
         </div>
       </main>
