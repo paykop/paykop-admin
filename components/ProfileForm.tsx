@@ -1,106 +1,157 @@
 // src/components/ProfileForm.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { useUserStore } from "../store/useUserStore";
-import { userProfileSchema, UserProfileInput } from "../schemas/userSchema";
+import { updateProfileSchema, UpdateProfileInput } from "../schemas/userSchema";
+import { updateUserProfile } from "../services/userService";
+import { Loader2, Settings } from "lucide-react";
 
 export default function ProfileForm() {
-  const { profile, setProfile, clearProfile } = useUserStore();
-  const [formData, setFormData] = useState<UserProfileInput>({
-    username: "",
-    email: "",
-    role: "user",
+  const { backendUser, fetchProfile } = useUserStore();
+  const { getToken } = useAuth();
+  
+  const [formData, setFormData] = useState<UpdateProfileInput>({
+    first_name: "",
+    last_name: "",
+    phone: "",
+    address: "",
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof UserProfileInput, string>>>({});
+  
+  const [errors, setErrors] = useState<Partial<Record<keyof UpdateProfileInput, string>>>({});
+  const [saving, setSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Sync state from backendUser when loaded
+  useEffect(() => {
+    if (backendUser) {
+      setFormData({
+        first_name: backendUser.first_name || "",
+        last_name: backendUser.last_name || "",
+        phone: backendUser.phone || "",
+        address: backendUser.address || "",
+      });
+    }
+  }, [backendUser]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSuccessMsg(null);
 
     // Validate with Zod
-    const result = userProfileSchema.safeParse(formData);
+    const result = updateProfileSchema.safeParse(formData);
 
     if (!result.success) {
-      const formattedErrors: Partial<Record<keyof UserProfileInput, string>> = {};
+      const formattedErrors: Partial<Record<keyof UpdateProfileInput, string>> = {};
       result.error.issues.forEach((issue) => {
-        const pathKey = issue.path[0] as keyof UserProfileInput;
+        const pathKey = issue.path[0] as keyof UpdateProfileInput;
         formattedErrors[pathKey] = issue.message;
       });
       setErrors(formattedErrors);
       return;
     }
 
-    // Reset errors and save profile to Zustand store
     setErrors({});
-    setProfile(result.data);
+    setSaving(true);
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error("Unauthorized: No Clerk token found");
+      }
+
+      // PATCH to backend using our user service
+      await updateUserProfile(token, result.data);
+
+      setSuccessMsg("Admin profile updated successfully!");
+      // Reload profile to refresh main layout
+      await fetchProfile(getToken);
+    } catch (err: any) {
+      console.error("Profile update failed:", err);
+      setErrors({ first_name: err?.message || "Failed to update profile." });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl text-slate-100">
-      <h2 className="text-xl font-bold mb-4 text-emerald-400">Verify Project Setup</h2>
+    <div className="w-full max-w-md mx-auto p-6 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl shadow-2xl text-slate-100">
+      <div className="flex items-center gap-2.5 mb-4">
+        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <Settings className="w-4 h-4" />
+        </div>
+        <h2 className="text-lg font-bold text-white tracking-tight">Admin Account Settings</h2>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1 text-slate-300">Username</label>
+          <label className="block text-xs font-semibold mb-1.5 text-slate-400 uppercase tracking-wider">First Name</label>
           <input
             type="text"
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            value={formData.username}
-            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition text-sm"
+            placeholder="John"
+            value={formData.first_name}
+            onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
             suppressHydrationWarning
           />
-          {errors.username && <p className="text-red-400 text-xs mt-1">{errors.username}</p>}
+          {errors.first_name && <p className="text-red-400 text-xs mt-1">{errors.first_name}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1 text-slate-300">Email</label>
+          <label className="block text-xs font-semibold mb-1.5 text-slate-400 uppercase tracking-wider">Last Name</label>
           <input
-            type="email"
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            type="text"
+            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition text-sm"
+            placeholder="Doe"
+            value={formData.last_name}
+            onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
             suppressHydrationWarning
           />
-          {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
+          {errors.last_name && <p className="text-red-400 text-xs mt-1">{errors.last_name}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1 text-slate-300">Role</label>
-          <select
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            value={formData.role}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value as UserProfileInput["role"] })}
+          <label className="block text-xs font-semibold mb-1.5 text-slate-400 uppercase tracking-wider">Phone Number</label>
+          <input
+            type="text"
+            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition text-sm"
+            placeholder="+1 (555) 000-0000"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             suppressHydrationWarning
-          >
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-            <option value="guest">Guest</option>
-          </select>
+          />
+          {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone}</p>}
         </div>
+
+        <div>
+          <label className="block text-xs font-semibold mb-1.5 text-slate-400 uppercase tracking-wider">Address</label>
+          <textarea
+            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition text-sm min-h-[80px] resize-none"
+            placeholder="123 Main St, New York, NY"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            suppressHydrationWarning
+          />
+          {errors.address && <p className="text-red-400 text-xs mt-1">{errors.address}</p>}
+        </div>
+
+        {successMsg && (
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs">
+            {successMsg}
+          </div>
+        )}
 
         <button
           type="submit"
-          className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold py-2 px-4 rounded-lg transition duration-200"
+          disabled={saving}
+          className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 font-semibold py-2.5 px-4 rounded-xl transition duration-200 text-sm flex items-center justify-center gap-2 cursor-pointer"
           suppressHydrationWarning
         >
-          Submit & Save in Zustand
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+          {saving ? "Updating Postgres..." : "Save Profile Details"}
         </button>
       </form>
-
-      {profile && (
-        <div className="mt-6 p-4 bg-slate-800 rounded-xl border border-slate-700">
-          <h3 className="font-semibold text-emerald-400 mb-2">Stored Zustand State:</h3>
-          <pre className="text-xs font-mono bg-slate-950 p-2 rounded text-emerald-300">
-            {JSON.stringify(profile, null, 2)}
-          </pre>
-          <button
-            onClick={clearProfile}
-            className="mt-3 text-xs text-red-400 hover:text-red-300 underline"
-          >
-            Clear State
-          </button>
-        </div>
-      )}
     </div>
   );
 }
