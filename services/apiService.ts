@@ -1,7 +1,11 @@
 // src/services/apiService.ts
+import axios from "axios";
 import { z } from "zod";
 
-interface FetchOptions extends RequestInit {
+interface FetchOptions {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: any;
   params?: Record<string, string>;
 }
 
@@ -23,50 +27,40 @@ export class ApiError extends Error {
 }
 
 /**
- * Generic API request wrapper with built-in Zod validation for response data
+ * Generic API request wrapper with built-in Zod validation for response data using Axios
  */
 export async function apiRequest<TSchema extends z.ZodTypeAny>(
   endpoint: string,
   schema: TSchema,
   options: FetchOptions = {}
 ): Promise<z.infer<TSchema>> {
-  const { params, ...customConfig } = options;
-  
-  // Construct URL with query parameters
-  const url = new URL(`${API_BASE_URL}${endpoint}`);
-  if (params) {
-    Object.keys(params).forEach((key) => url.searchParams.append(key, params[key]));
-  }
-
-  const headers = {
-    "Content-Type": "application/json",
-    'ngrok-skip-browser-warning': 'true',
-    ...customConfig.headers,
-  };
-
-  const config: RequestInit = {
-    ...customConfig,
-    headers,
-  };
+  const { params } = options;
 
   try {
-    const response = await fetch(url.toString(), config);
-    
-    if (!response.ok) {
-      let errorInfo;
+    // Parse body from JSON string if needed to support existing fetch-style call payloads
+    let requestData = options.body;
+    if (typeof options.body === "string") {
       try {
-        errorInfo = await response.json();
+        requestData = JSON.parse(options.body);
       } catch {
-        errorInfo = await response.text();
+        requestData = options.body;
       }
-      throw new ApiError(
-        `API request failed with status ${response.status}`,
-        response.status,
-        errorInfo
-      );
     }
 
-    const data = await response.json();
+    const response = await axios({
+      url: `${API_BASE_URL}${endpoint}`,
+      method: (options.method || "GET") as any,
+      params,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Client-Type": "admin",
+        "ngrok-skip-browser-warning": "true",
+        ...options.headers,
+      },
+      data: requestData,
+    });
+
+    const data = response.data;
     
     // Validate response using Zod schema to ensure data contract matching
     const result = schema.safeParse(data);
@@ -77,16 +71,15 @@ export async function apiRequest<TSchema extends z.ZodTypeAny>(
 
     return result.data;
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status || 500;
+      const info = error.response?.data;
+      const message = error.response?.data?.error || error.message;
+      throw new ApiError(message, status, info);
+    }
     if (error instanceof ApiError || error instanceof Error) {
       throw error;
     }
     throw new Error("An unknown network error occurred.");
   }
 }
-
-// Example usage of a specific API endpoint call:
-/*
-export const fetchUserProfile = async (userId: string) => {
-  return apiRequest(`/users/${userId}`, userProfileSchema);
-};
-*/

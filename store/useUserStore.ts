@@ -4,6 +4,7 @@ import { BackendUser, PermissionsResponse } from "../schemas/userSchema";
 import {
   fetchUserProfile,
   fetchUserPermissions,
+  syncUser,
 } from "../services/userService";
 
 interface UserState {
@@ -35,7 +36,32 @@ export const useUserStore = create<UserState>((set) => ({
       }
 
       // Query database directly to check if the user exists
-      const response = await fetchUserProfile(token);
+      let response;
+      try {
+        response = await fetchUserProfile(token);
+      } catch (err: any) {
+        if (err?.status === 401) {
+          // Auto-sync fallback for first-time admin login
+          const syncRes = await syncUser(token);
+          if (syncRes.role === "admin") {
+            response = await fetchUserProfile(token);
+          } else {
+            throw new Error("Access Denied: Only accounts with the 'admin' role are authorized to access this portal.");
+          }
+        } else {
+          throw err;
+        }
+      }
+
+      if (response.role !== "admin") {
+        set({
+          backendUser: null,
+          permissions: null,
+          error: "Access Denied: Only accounts with the 'admin' role are authorized to access this portal.",
+        });
+        return;
+      }
+
       set({ backendUser: response, error: null });
 
       // Fetch permissions in background
