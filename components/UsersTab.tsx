@@ -128,7 +128,7 @@ export default function UsersTab() {
               <TableRow className="border-b border-slate-100 hover:bg-transparent">
                 <TableHead className="p-4 pl-6 text-slate-400 font-bold uppercase tracking-wider text-[10px]">User</TableHead>
                 <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Role</TableHead>
-                <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Onboarded</TableHead>
+                <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Status</TableHead>
                 <TableHead className="p-4 pr-6 text-right font-bold text-slate-400 uppercase tracking-wider text-[10px]">Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -152,9 +152,24 @@ export default function UsersTab() {
                     </TableCell>
                     <TableCell className="p-4 text-slate-500 font-bold capitalize">{user.role}</TableCell>
                     <TableCell className="p-4">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold ${getStatusStyle(user.is_onboarded)}`}>
-                        {user.is_onboarded ? "Onboarded" : "Pending"}
-                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold ${getStatusStyle(user.is_onboarded)}`}>
+                          {user.is_onboarded ? "Onboarded" : "Pending"}
+                        </span>
+                        {user.kyc_status && (
+                          <span className={`inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold ${
+                            user.kyc_status === "verified" ? "bg-blue-500/10 border-blue-500/20 text-blue-600" :
+                            "bg-slate-500/10 border-slate-500/20 text-slate-600"
+                          } capitalize`}>
+                            KYC: {user.kyc_status}
+                          </span>
+                        )}
+                        {user.is_suspended && (
+                          <span className="inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold bg-rose-500/10 border-rose-500/20 text-rose-600">
+                            Suspended
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="p-4 pr-6 text-right whitespace-nowrap flex justify-end gap-2 items-center h-[72px]">
                       {processingId === user.id ? (
@@ -255,6 +270,25 @@ export default function UsersTab() {
                   disabled
                   className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-500">KYC Status</label>
+                  <input
+                    value={selectedUser.kyc_status || "N/A"}
+                    disabled
+                    className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500 capitalize"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-500">Account Status</label>
+                  <input
+                    value={selectedUser.is_suspended ? "Suspended" : "Active"}
+                    disabled
+                    className={`w-full px-3 py-2 border rounded-md bg-slate-50 ${selectedUser.is_suspended ? "text-rose-500 font-bold" : "text-emerald-500 font-bold"}`}
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
