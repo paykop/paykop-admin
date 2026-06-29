@@ -1,8 +1,9 @@
 // src/components/OverviewTab.tsx
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { useDashboardStore } from "../store/useDashboardStore";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
@@ -14,46 +15,71 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Button } from "./ui/button";
-import { Users, TrendingUp, Heart, CreditCard, ArrowRight } from "lucide-react";
+import { Users, TrendingUp, Heart, CreditCard, ArrowRight, Loader2 } from "lucide-react";
 
 export default function OverviewTab() {
   const router = useRouter();
-  const campaigns = useDashboardStore((state) => state.campaigns);
+  const { getToken } = useAuth();
+  
+  const { data, loading, fetchDashboard } = useDashboardStore();
 
-  const pendingApprovalsCount = campaigns.filter((c) => c.status === "pending").length;
+  useEffect(() => {
+    fetchDashboard(getToken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getToken]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  const counts = data?.counts || {
+    total_users: 0,
+    buyers: 0,
+    sellers: 0,
+    admins: 0,
+    pending_products: 0,
+    approved_products: 0,
+    rejected_products: 0,
+  };
+
+  const pendingApprovalsCount = counts.pending_products;
 
   const metrics = [
     {
       label: "Total users",
-      value: "48,920",
-      change: "+6.2% vs last month",
+      value: counts.total_users.toLocaleString(),
+      change: `Buyers: ${counts.buyers}, Sellers: ${counts.sellers}`,
       icon: Users,
       iconColor: "text-blue-500 bg-blue-500/10",
-      changeColor: "text-emerald-500",
+      changeColor: "text-slate-500",
     },
     {
-      label: "Active users",
-      value: "21,340",
-      change: "+3.8% vs last month",
+      label: "Approved Products",
+      value: counts.approved_products.toLocaleString(),
+      change: `Pending: ${counts.pending_products}`,
       icon: TrendingUp,
       iconColor: "text-blue-500 bg-blue-500/10",
-      changeColor: "text-emerald-500",
+      changeColor: "text-amber-500",
     },
     {
-      label: "Total donations",
-      value: "₹2.84Cr",
-      change: "+11.4% vs last month",
+      label: "Admins",
+      value: counts.admins.toLocaleString(),
+      change: "Active team members",
       icon: Heart,
       iconColor: "text-rose-500 bg-rose-500/10",
-      changeColor: "text-emerald-500",
+      changeColor: "text-slate-500",
     },
     {
-      label: "Subscription revenue",
-      value: "₹18.6L",
-      change: "+8.0% vs last month",
+      label: "Total Products",
+      value: (counts.approved_products + counts.pending_products + counts.rejected_products).toLocaleString(),
+      change: `Rejected: ${counts.rejected_products}`,
       icon: CreditCard,
       iconColor: "text-indigo-500 bg-indigo-500/10",
-      changeColor: "text-emerald-500",
+      changeColor: "text-rose-500",
     },
   ];
 
@@ -78,17 +104,15 @@ export default function OverviewTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Overview</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Platform health · last 30 days</p>
+          <p className="text-sm text-slate-500 mt-0.5">Platform health · Live Data</p>
         </div>
         <div>
-          <Select defaultValue="jun-2026">
+          <Select defaultValue="all-time">
             <SelectTrigger className="w-[120px] bg-white border border-slate-200 text-slate-700 font-semibold text-xs rounded-lg shadow-sm">
               <SelectValue placeholder="Select date" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="jun-2026" className="text-xs">Jun 2026</SelectItem>
-              <SelectItem value="may-2026" className="text-xs">May 2026</SelectItem>
-              <SelectItem value="apr-2026" className="text-xs">Apr 2026</SelectItem>
+              <SelectItem value="all-time" className="text-xs">All Time</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -122,7 +146,7 @@ export default function OverviewTab() {
         {/* Transactions volume */}
         <Card className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col justify-between min-h-[300px]">
           <CardHeader className="p-5 pb-0 flex flex-row items-center justify-between">
-            <CardTitle className="font-bold text-slate-800 text-sm">Transactions volume</CardTitle>
+            <CardTitle className="font-bold text-slate-800 text-sm">Activity volume</CardTitle>
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Weekly</span>
           </CardHeader>
           <CardContent className="p-5 pt-4 flex-1 flex flex-col justify-end">
@@ -174,9 +198,9 @@ export default function OverviewTab() {
               ⚠️
             </div>
             <div>
-              <AlertTitle className="text-sm font-semibold text-amber-800 mb-0.5">Pending donation approvals</AlertTitle>
+              <AlertTitle className="text-sm font-semibold text-amber-800 mb-0.5">Pending product approvals</AlertTitle>
               <AlertDescription className="text-xs text-amber-700/80 leading-normal">
-                {pendingApprovalsCount} campaign{pendingApprovalsCount > 1 ? "s" : ""} waiting for review before they go public.
+                {pendingApprovalsCount} product{pendingApprovalsCount > 1 ? "s" : ""} waiting for review before they go public.
               </AlertDescription>
             </div>
           </div>

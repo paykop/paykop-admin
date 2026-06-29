@@ -1,26 +1,13 @@
 // src/services/productService.ts
 import { z } from "zod";
 import { apiRequest } from "./apiService";
-
-export const productResponseSchema = z.object({
-  id: z.number(),
-  seller_id: z.string(),
-  title: z.string(),
-  description: z.string().optional().default(""),
-  price: z.number(),
-  stock: z.number(),
-  category: z.string().optional().default(""),
-  images: z.string().optional().default(""),
-  status: z.string(),
-});
-
-export const productListResponseSchema = z.object({
-  products: z.array(productResponseSchema),
-  total: z.number(),
-});
-
-export type ProductResponse = z.infer<typeof productResponseSchema>;
-export type ProductListResponse = z.infer<typeof productListResponseSchema>;
+import {
+  productListResponseSchema,
+  productResponseSchema,
+  feedResponseSchema,
+  adminProductListResponseSchema,
+  AdminProductListResponse,
+} from "../schemas/productSchema";
 
 /**
  * Fetch list of approved products from the backend (paginated)
@@ -48,19 +35,72 @@ export async function fetchProductDetail(token: string, id: number) {
   });
 }
 
-export const feedResponseSchema = z.object({
-  featured_products: z.array(productResponseSchema),
-  recommended_services: z.array(z.any()),
-  urgent_donations: z.array(z.any()),
-});
-
-export type FeedResponse = z.infer<typeof feedResponseSchema>;
-
 /**
  * Fetch home feed containing featured products and recommendation placeholders
  */
 export async function fetchHomeFeed(token: string) {
   return apiRequest("/api/v1/home", feedResponseSchema, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+// ==========================================
+// ADMIN PRODUCT METHODS
+// ==========================================
+
+/**
+ * Fetch products list (Admin)
+ */
+export async function fetchAdminProducts(token: string, page = 1, limit = 10, status?: string): Promise<AdminProductListResponse> {
+  const params: Record<string, string> = {
+    page: page.toString(),
+    limit: limit.toString(),
+  };
+  if (status) params.status = status;
+
+  return apiRequest("/api/v1/admin/products", adminProductListResponseSchema, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    params,
+  });
+}
+
+/**
+ * Update product status (Admin)
+ */
+export async function updateAdminProductStatus(token: string, id: number, status: string): Promise<any> {
+  return apiRequest(`/api/v1/admin/products/${id}/status`, z.any(), {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  });
+}
+
+/**
+ * Approve a product (Admin)
+ */
+export async function approveAdminProduct(token: string, id: number): Promise<any> {
+  console.log(`[API] Approving product ID: ${id}`);
+  return apiRequest(`/api/v1/admin/products/${id}/approve`, z.any(), {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+/**
+ * Delete a product (Admin)
+ */
+export async function deleteAdminProduct(token: string, id: number): Promise<any> {
+  console.log(`[API] Deleting product ID: ${id}`);
+  return apiRequest(`/api/v1/admin/products/${id}`, z.any(), {
+    method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
     },

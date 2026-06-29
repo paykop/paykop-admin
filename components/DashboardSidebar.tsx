@@ -13,6 +13,7 @@ import {
   Users,
   CreditCard,
   Layers,
+  Terminal,
   LogOut
 } from "lucide-react";
 
@@ -20,9 +21,9 @@ export default function DashboardSidebar() {
   const pathname = usePathname();
   const { user: clerkUser } = useUser();
   const { backendUser } = useUserStore();
-  const campaigns = useDashboardStore((state) => state.campaigns);
+  const dashboardData = useDashboardStore((state) => state.data);
 
-  const pendingApprovalsCount = campaigns.filter((c) => c.status === "pending").length;
+  const pendingApprovalsCount = dashboardData?.counts?.pending_products || 0;
 
   const navItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard, href: "/" },
@@ -30,6 +31,7 @@ export default function DashboardSidebar() {
     { id: "users", label: "Users", icon: Users, href: "/users" },
     { id: "payments", label: "Payments", icon: CreditCard, href: "/payments" },
     { id: "subscriptions", label: "Subscriptions", icon: Layers, href: "/subscriptions" },
+    { id: "logs", label: "System Logs", icon: Terminal, href: "/logs" },
   ];
 
   // Robust real data extraction: Clerk name > DB name > email prefix > fallback
