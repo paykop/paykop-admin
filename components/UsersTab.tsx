@@ -6,70 +6,58 @@ import { useAuth } from "@clerk/nextjs";
 import { useAdminUsersStore } from "../store/useAdminUsersStore";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Loader2, Edit } from "lucide-react";
+import {
+  Loader2, Edit, Eye, Mail, Phone, MapPin, ShieldCheck, ShieldOff,
+  User, CalendarDays, BadgeCheck, CreditCard, LinkIcon, FileText,
+  LogIn, Star, Trophy, Award,
+} from "lucide-react";
 
 export default function UsersTab() {
   const { getToken } = useAuth();
-  
-  const { 
-    users, 
-    loading, 
-    fetchAdminUsers, 
-    suspendAdminUser, 
-    verifyAdminUser,
-    selectedUser,
-    detailsLoading,
-    fetchUserDetail,
-    updateUserDetails,
-    clearSelectedUser
+  const {
+    users, loading, fetchAdminUsers, suspendAdminUser, verifyAdminUser,
+    selectedUser, detailsLoading, fetchUserDetail, updateUserDetails, clearSelectedUser,
   } = useAdminUsersStore();
 
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({ first_name: "", last_name: "", role: "" });
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [roleFilter, setRoleFilter] = useState("all");
 
   useEffect(() => {
-    fetchAdminUsers(getToken);
+    fetchAdminUsers(getToken, roleFilter === "all" ? undefined : roleFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getToken]);
+  }, [getToken, roleFilter]);
 
   useEffect(() => {
     if (selectedUser) {
       setEditForm({
         first_name: selectedUser.first_name || "",
         last_name: selectedUser.last_name || "",
-        role: (selectedUser.role || "buyer").toLowerCase()
+        role: (selectedUser.role || "buyer").toLowerCase(),
       });
     }
   }, [selectedUser]);
 
   const handleToggleStatus = async (id: string, action: "suspend" | "unsuspend" | "verify") => {
     setProcessingId(id);
-    if (action === "suspend") {
-      await suspendAdminUser(getToken, id, true);
-    } else if (action === "unsuspend") {
-      await suspendAdminUser(getToken, id, false);
-    } else {
-      await verifyAdminUser(getToken, id);
-    }
+    if (action === "suspend") await suspendAdminUser(getToken, id, true);
+    else if (action === "unsuspend") await suspendAdminUser(getToken, id, false);
+    else await verifyAdminUser(getToken, id);
     setProcessingId(null);
   };
 
-  const handleOpenEdit = async (id: string) => {
-    setModalOpen(true);
+  const handleOpenView = async (id: string) => {
+    setViewModalOpen(true);
     await fetchUserDetail(getToken, id);
   };
 
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    clearSelectedUser();
+  const handleOpenEdit = async (id: string) => {
+    setEditModalOpen(true);
+    await fetchUserDetail(getToken, id);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
@@ -77,47 +65,57 @@ export default function UsersTab() {
     if (!selectedUser) return;
     setProcessingId("save-edit");
     try {
-      const payload: any = {
-        first_name: editForm.first_name,
-        last_name: editForm.last_name,
-      };
-
+      const payload: any = { first_name: editForm.first_name, last_name: editForm.last_name };
       const newRole = editForm.role?.trim().toLowerCase();
       const oldRole = selectedUser.role?.trim().toLowerCase();
-      
-      if (newRole && newRole !== oldRole) {
-        payload.role = newRole;
-      }
-
+      if (newRole && newRole !== oldRole) payload.role = newRole;
       await updateUserDetails(getToken, selectedUser.id, payload);
-      setModalOpen(false);
+      setEditModalOpen(false);
       clearSelectedUser();
     } finally {
       setProcessingId(null);
     }
   };
 
-  const getStatusStyle = (isOnboarded: boolean) => {
-    if (isOnboarded) {
-      return "bg-emerald-500/10 border-emerald-500/20 text-emerald-600";
-    }
-    return "bg-amber-500/10 border-amber-500/20 text-amber-600";
+  const getStatusStyle = (isOnboarded: boolean) =>
+    isOnboarded ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600" : "bg-amber-500/10 border-amber-500/20 text-amber-600";
+
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) return "—";
+    return new Date(dateStr).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+
+  const getBadgeColor = (badge?: string | null) => {
+    if (!badge) return "bg-slate-100 text-slate-500";
+    if (badge.toLowerCase().includes("gold")) return "bg-yellow-100 text-yellow-700";
+    if (badge.toLowerCase().includes("silver")) return "bg-slate-200 text-slate-700";
+    return "bg-amber-100 text-amber-700"; // Bronze
   };
 
   if (loading && users.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
+    return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Users</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Manage status, verification, and roles</p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Users</h2>
+          <p className="text-sm text-slate-500 mt-0.5">Manage status, verification, and roles</p>
+        </div>
+        {/* Role Filter (July 2026) */}
+        <Select value={roleFilter} onValueChange={(val) => setRoleFilter(val)}>
+          <SelectTrigger className="w-[150px] bg-white border border-slate-200 text-slate-700 font-semibold text-xs rounded-lg shadow-sm">
+            <SelectValue placeholder="Filter by role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Roles</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="buyer">Buyer</SelectItem>
+            <SelectItem value="seller">Seller</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Directory Table */}
@@ -129,7 +127,8 @@ export default function UsersTab() {
                 <TableHead className="p-4 pl-6 text-slate-400 font-bold uppercase tracking-wider text-[10px]">User</TableHead>
                 <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Role</TableHead>
                 <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Status</TableHead>
-                <TableHead className="p-4 pr-6 text-right font-bold text-slate-400 uppercase tracking-wider text-[10px]">Action</TableHead>
+                <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Gamification</TableHead>
+                <TableHead className="p-4 pr-6 text-right font-bold text-slate-400 uppercase tracking-wider text-[10px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100">
@@ -142,9 +141,7 @@ export default function UsersTab() {
                 return (
                   <TableRow key={user.id} className="hover:bg-slate-50/50 transition border-b border-slate-100">
                     <TableCell className="p-4 pl-6 font-bold text-slate-800 flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full ${avatarColor} text-white flex items-center justify-center font-bold text-xs shrink-0`}>
-                        {initials}
-                      </div>
+                      <div className={`w-8 h-8 rounded-full ${avatarColor} text-white flex items-center justify-center font-bold text-xs shrink-0`}>{initials}</div>
                       <div className="flex flex-col">
                         <span className="text-[13px] font-bold text-slate-800">{name}</span>
                         <span className="text-[11px] text-slate-400 font-semibold mt-0.5">{user.email || user.phone}</span>
@@ -157,61 +154,49 @@ export default function UsersTab() {
                           {user.is_onboarded ? "Onboarded" : "Pending"}
                         </span>
                         {user.kyc_status && (
-                          <span className={`inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold ${
-                            user.kyc_status === "verified" ? "bg-blue-500/10 border-blue-500/20 text-blue-600" :
-                            "bg-slate-500/10 border-slate-500/20 text-slate-600"
-                          } capitalize`}>
+                          <span className={`inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold ${user.kyc_status === "verified" ? "bg-blue-500/10 border-blue-500/20 text-blue-600" : "bg-slate-500/10 border-slate-500/20 text-slate-600"} capitalize`}>
                             KYC: {user.kyc_status}
                           </span>
                         )}
                         {user.is_suspended && (
-                          <span className="inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold bg-rose-500/10 border-rose-500/20 text-rose-600">
-                            Suspended
-                          </span>
+                          <span className="inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold bg-rose-500/10 border-rose-500/20 text-rose-600">Suspended</span>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="p-4 pr-6 text-right whitespace-nowrap flex justify-end gap-2 items-center h-[72px]">
+                    {/* Gamification column (July 2026) */}
+                    <TableCell className="p-4">
+                      <div className="flex flex-col gap-1">
+                        {user.badge && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${getBadgeColor(user.badge)}`}>
+                            <Trophy className="w-2.5 h-2.5" />{user.badge}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400 font-semibold">
+                          <span className="flex items-center gap-0.5"><Star className="w-2.5 h-2.5 text-amber-400" />{user.community_score ?? 0}</span>
+                          <span className="flex items-center gap-0.5"><Award className="w-2.5 h-2.5 text-purple-400" />{user.reward_points ?? 0} pts</span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="p-4 pr-6 text-right whitespace-nowrap">
                       {processingId === user.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                        <div className="flex justify-end"><Loader2 className="w-4 h-4 animate-spin text-blue-500" /></div>
                       ) : (
-                        <>
-                          <Button
-                            onClick={() => handleOpenEdit(user.id)}
-                            variant="ghost"
-                            className="h-8 px-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-                            title="Edit User"
-                          >
+                        <div className="flex justify-end gap-2 items-center">
+                          <Button onClick={() => handleOpenView(user.id)} variant="ghost" className="h-8 px-2 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer" title="View Details">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button onClick={() => handleOpenEdit(user.id)} variant="ghost" className="h-8 px-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer" title="Edit User">
                             <Edit className="w-4 h-4" />
                           </Button>
-
                           {user.kyc_status !== "verified" && (
-                            <Button
-                              onClick={() => handleToggleStatus(user.id, "verify")}
-                              variant="outline"
-                              className="h-8 px-3 rounded-lg border border-blue-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition font-bold text-xs cursor-pointer"
-                            >
-                              Verify
-                            </Button>
+                            <Button onClick={() => handleToggleStatus(user.id, "verify")} variant="outline" className="h-8 px-3 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 font-bold text-xs cursor-pointer">Verify</Button>
                           )}
                           {!user.is_suspended ? (
-                            <Button
-                              onClick={() => handleToggleStatus(user.id, "suspend")}
-                              variant="outline"
-                              className="h-8 px-3 rounded-lg border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition font-bold text-xs cursor-pointer"
-                            >
-                              Suspend
-                            </Button>
+                            <Button onClick={() => handleToggleStatus(user.id, "suspend")} variant="outline" className="h-8 px-3 rounded-lg border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 font-bold text-xs cursor-pointer">Suspend</Button>
                           ) : (
-                            <Button
-                              onClick={() => handleToggleStatus(user.id, "unsuspend")}
-                              variant="outline"
-                              className="h-8 px-3 rounded-lg border border-amber-200 text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition font-bold text-xs cursor-pointer"
-                            >
-                              Unsuspend
-                            </Button>
+                            <Button onClick={() => handleToggleStatus(user.id, "unsuspend")} variant="outline" className="h-8 px-3 rounded-lg border border-amber-200 text-amber-600 hover:bg-amber-50 font-bold text-xs cursor-pointer">Unsuspend</Button>
                           )}
-                        </>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -219,9 +204,7 @@ export default function UsersTab() {
               })}
               {users.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="p-4 text-center text-slate-500">
-                    No users found.
-                  </TableCell>
+                  <TableCell colSpan={5} className="p-8 text-center text-slate-400">No users found{roleFilter !== "all" ? ` for role "${roleFilter}"` : ""}.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -229,74 +212,129 @@ export default function UsersTab() {
         </div>
       </div>
 
-      {/* Edit User Modal */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>Edit User Profile</DialogTitle>
-          </DialogHeader>
-          
+      {/* VIEW DETAILS MODAL */}
+      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
+        <DialogContent className="sm:max-w-[560px] p-0 overflow-hidden rounded-2xl" onInteractOutside={(e) => e.preventDefault()}>
           {detailsLoading ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-            </div>
+            <div className="flex justify-center items-center p-16"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+          ) : selectedUser ? (
+            <>
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 px-6 pt-6 pb-8">
+                <div className="flex items-center gap-4">
+                  {selectedUser.profile_picture_url ? (
+                    <img src={selectedUser.profile_picture_url} alt="Avatar" className="w-16 h-16 rounded-2xl object-cover border-2 border-white/20 shadow-lg" />
+                  ) : (() => {
+                    const name = `${selectedUser.first_name} ${selectedUser.last_name}`.trim() || "U";
+                    const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+                    const colorMap = ["bg-blue-500", "bg-indigo-500", "bg-amber-500", "bg-rose-500", "bg-emerald-500"];
+                    const avatarColor = colorMap[selectedUser.id.charCodeAt(selectedUser.id.length - 1) % colorMap.length];
+                    return <div className={`w-16 h-16 rounded-2xl ${avatarColor} text-white flex items-center justify-center font-bold text-xl shadow-lg shrink-0`}>{initials}</div>;
+                  })()}
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{`${selectedUser.first_name} ${selectedUser.last_name}`.trim() || "Unknown"}</h3>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-white/10 text-white/80 text-xs font-semibold capitalize">{selectedUser.role}</span>
+                      {selectedUser.is_suspended
+                        ? <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-xs font-semibold"><ShieldOff className="w-3 h-3" /> Suspended</span>
+                        : <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold"><ShieldCheck className="w-3 h-3" /> Active</span>}
+                      {selectedUser.badge && (
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${getBadgeColor(selectedUser.badge)}`}>
+                          <Trophy className="w-3 h-3" />{selectedUser.badge}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
+                <Section title="Contact Information">
+                  <InfoRow icon={<Mail className="w-3.5 h-3.5" />} label="Email" value={selectedUser.email || "—"} />
+                  <InfoRow icon={<Phone className="w-3.5 h-3.5" />} label="Phone" value={selectedUser.phone || "—"} />
+                  <InfoRow icon={<MapPin className="w-3.5 h-3.5" />} label="Address" value={selectedUser.address || "—"} />
+                </Section>
+                <Section title="Account Information">
+                  <InfoRow icon={<User className="w-3.5 h-3.5" />} label="User ID" value={selectedUser.id} mono />
+                  <InfoRow icon={<LogIn className="w-3.5 h-3.5" />} label="Auth Source" value={selectedUser.auth_source || "—"} />
+                  <InfoRow icon={<BadgeCheck className="w-3.5 h-3.5" />} label="KYC Status" value={selectedUser.kyc_status} badge badgeColor={selectedUser.kyc_status === "verified" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"} />
+                  <InfoRow icon={<ShieldCheck className="w-3.5 h-3.5" />} label="Onboarding" value={selectedUser.is_onboarded ? "Completed" : "Pending"} badge badgeColor={selectedUser.is_onboarded ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"} />
+                  <InfoRow icon={<CreditCard className="w-3.5 h-3.5" />} label="Subscription" value={selectedUser.has_subscription ? "Active" : "None"} badge badgeColor={selectedUser.has_subscription ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-500"} />
+                </Section>
+                {/* Gamification Section (July 2026) */}
+                <Section title="Gamification">
+                  <InfoRow icon={<Star className="w-3.5 h-3.5" />} label="Community Score" value={String(selectedUser.community_score ?? 0)} />
+                  <InfoRow icon={<Award className="w-3.5 h-3.5" />} label="Reward Points" value={`${selectedUser.reward_points ?? 0} pts`} />
+                  <InfoRow icon={<Trophy className="w-3.5 h-3.5" />} label="Badge" value={selectedUser.badge || "None"} badge badgeColor={getBadgeColor(selectedUser.badge)} />
+                </Section>
+                {selectedUser.bio && (
+                  <Section title="Bio">
+                    <div className="flex items-start gap-2 text-xs text-slate-600 px-3 py-2.5">
+                      <FileText className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" />
+                      <p className="leading-relaxed">{selectedUser.bio}</p>
+                    </div>
+                  </Section>
+                )}
+                {selectedUser.social_links && (
+                  <Section title="Social Links">
+                    <div className="flex items-center gap-2 text-xs text-blue-600 break-all px-3 py-2.5">
+                      <LinkIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{selectedUser.social_links}</span>
+                    </div>
+                  </Section>
+                )}
+                <Section title="Timestamps">
+                  <InfoRow icon={<CalendarDays className="w-3.5 h-3.5" />} label="Joined" value={formatDate(selectedUser.created_at)} />
+                  <InfoRow icon={<CalendarDays className="w-3.5 h-3.5" />} label="Last Updated" value={formatDate(selectedUser.updated_at)} />
+                </Section>
+              </div>
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                <Button variant="outline" onClick={() => { setViewModalOpen(false); clearSelectedUser(); handleOpenEdit(selectedUser.id); }} className="h-8 px-4 text-xs font-bold border-blue-200 text-blue-600 hover:bg-blue-50 cursor-pointer">
+                  <Edit className="w-3.5 h-3.5 mr-1.5" />Edit User
+                </Button>
+                <Button variant="ghost" onClick={() => { setViewModalOpen(false); clearSelectedUser(); }} className="h-8 px-4 text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Close</Button>
+              </div>
+            </>
+          ) : (
+            <div className="p-8 text-center text-rose-500 text-sm">Failed to load user details.</div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* EDIT USER MODAL */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader><DialogTitle>Edit User Profile</DialogTitle></DialogHeader>
+          {detailsLoading ? (
+            <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
           ) : selectedUser ? (
             <form onSubmit={handleSaveEdit} className="space-y-4 pt-4 text-sm">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-500">First Name</label>
-                  <input
-                    value={editForm.first_name}
-                    onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md outline-none focus:border-blue-500"
-                    required
-                  />
+                  <input value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} className="w-full px-3 py-2 border rounded-md outline-none focus:border-blue-500" required />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-500">Last Name</label>
-                  <input
-                    value={editForm.last_name}
-                    onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md outline-none focus:border-blue-500"
-                    required
-                  />
+                  <input value={editForm.last_name} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} className="w-full px-3 py-2 border rounded-md outline-none focus:border-blue-500" required />
                 </div>
               </div>
-
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-500">Email Address</label>
-                <input
-                  value={selectedUser.email || ""}
-                  disabled
-                  className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500"
-                />
+                <input value={selectedUser.email || ""} disabled className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500" />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-500">KYC Status</label>
-                  <input
-                    value={selectedUser.kyc_status || "N/A"}
-                    disabled
-                    className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500 capitalize"
-                  />
+                  <input value={selectedUser.kyc_status || "N/A"} disabled className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500 capitalize" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-500">Account Status</label>
-                  <input
-                    value={selectedUser.is_suspended ? "Suspended" : "Active"}
-                    disabled
-                    className={`w-full px-3 py-2 border rounded-md bg-slate-50 ${selectedUser.is_suspended ? "text-rose-500 font-bold" : "text-emerald-500 font-bold"}`}
-                  />
+                  <input value={selectedUser.is_suspended ? "Suspended" : "Active"} disabled className={`w-full px-3 py-2 border rounded-md bg-slate-50 ${selectedUser.is_suspended ? "text-rose-500 font-bold" : "text-emerald-500 font-bold"}`} />
                 </div>
               </div>
-
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-500">Role</label>
                 <Select value={editForm.role} onValueChange={(val) => setEditForm({ ...editForm, role: val })}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Select role" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="buyer">Buyer</SelectItem>
                     <SelectItem value="seller">Seller</SelectItem>
@@ -304,11 +342,8 @@ export default function UsersTab() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={handleCloseModal}>
-                  Cancel
-                </Button>
+                <Button type="button" variant="outline" onClick={() => { setEditModalOpen(false); clearSelectedUser(); }}>Cancel</Button>
                 <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700" disabled={processingId === "save-edit"}>
                   {processingId === "save-edit" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
                 </Button>
@@ -319,6 +354,33 @@ export default function UsersTab() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">{title}</p>
+      <div className="bg-slate-50 rounded-xl border border-slate-100 divide-y divide-slate-100 overflow-hidden">{children}</div>
+    </div>
+  );
+}
+
+function InfoRow({ icon, label, value, mono = false, badge = false, badgeColor = "bg-slate-100 text-slate-600" }: {
+  icon: React.ReactNode; label: string; value: string; mono?: boolean; badge?: boolean; badgeColor?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between px-3 py-2.5 gap-3">
+      <div className="flex items-center gap-2 text-slate-400 shrink-0">
+        {icon}
+        <span className="text-[11px] font-semibold text-slate-500">{label}</span>
+      </div>
+      {badge ? (
+        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${badgeColor}`}>{value}</span>
+      ) : (
+        <span className={`text-xs font-semibold text-slate-700 text-right break-all ${mono ? "font-mono text-[10px] text-slate-500" : ""}`}>{value}</span>
+      )}
     </div>
   );
 }

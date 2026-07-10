@@ -10,8 +10,14 @@ export const productResponseSchema = z.object({
   price: z.number(),
   stock: z.number(),
   category: z.string().optional().default(""),
-  images: z.string().optional().default(""),
+  // July 2026: images is now a native JSON array (was serialised string)
+  images: z.union([z.array(z.string()), z.string()]).optional().default([]),
   status: z.string(),
+  // July 2026: dynamic rating fields
+  average_rating: z.number().optional().default(0),
+  review_count: z.number().optional().default(0),
+  // July 2026: reviews now included in GET /products/:id detail
+  reviews: z.array(z.any()).optional().default([]),
 });
 
 export const productListResponseSchema = z.object({
@@ -39,7 +45,12 @@ export const adminProductListItemSchema = z.object({
   price: z.number(),
   stock: z.number(),
   category: z.string().optional().default(""),
+  // July 2026: images as native JSON array
+  images: z.union([z.array(z.string()), z.string()]).optional().default([]),
   status: z.string(),
+  // July 2026: dynamic rating fields
+  average_rating: z.number().optional().default(0),
+  review_count: z.number().optional().default(0),
 });
 
 export const adminProductListResponseSchema = z.object({

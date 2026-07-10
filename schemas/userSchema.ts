@@ -59,8 +59,12 @@ export const userListItemSchema = z.object({
   last_name: z.string(),
   role: z.string(),
   is_onboarded: z.boolean(),
-  kyc_status: z.string(),
-  is_suspended: z.boolean(),
+  kyc_status: z.string().optional(),
+  is_suspended: z.boolean().optional(),
+  // Gamification fields (July 2026)
+  community_score: z.number().optional().default(0),
+  reward_points: z.number().optional().default(0),
+  badge: z.string().nullable().optional(),
 });
 
 export const userListResponseSchema = z.object({
@@ -89,6 +93,10 @@ export const userDetailsResponseSchema = z.object({
   is_suspended: z.boolean(),
   created_at: z.string(),
   updated_at: z.string(),
+  // Gamification fields (July 2026)
+  community_score: z.number().optional().default(0),
+  reward_points: z.number().optional().default(0),
+  badge: z.string().nullable().optional(),
 });
 
 export type UserDetailsResponse = z.infer<typeof userDetailsResponseSchema>;

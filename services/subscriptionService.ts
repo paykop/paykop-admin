@@ -1,6 +1,16 @@
 // src/services/subscriptionService.ts
 import { apiRequest } from "./apiService";
 import { actionResponseSchema } from "../schemas/userSchema";
+import {
+  subscriptionPlanSchema,
+  subscriptionPlanActionResponseSchema,
+  subscriptionHistoryResponseSchema,
+  CreateSubscriptionPlanRequest,
+  UpdateSubscriptionPlanRequest,
+  SubscriptionPlan,
+  SubscriptionPlanActionResponse,
+  SubscriptionHistoryResponse,
+} from "../schemas/subscriptionSchema";
 
 /**
  * Activate subscription (promotes the logged-in buyer to a seller role)
@@ -25,3 +35,79 @@ export async function cancelSubscription(token: string) {
     },
   });
 }
+
+// ==========================================
+// ADMIN SUBSCRIPTION METHODS
+// ==========================================
+
+/**
+ * Create a new subscription plan/tier (Admin)
+ */
+export async function createSubscriptionPlan(
+  token: string,
+  data: CreateSubscriptionPlanRequest
+): Promise<SubscriptionPlan> {
+  console.log(`[API] Creating subscription plan:`, data);
+  return apiRequest("/api/v1/admin/subscriptions", subscriptionPlanSchema, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Update an existing subscription plan/tier (Admin)
+ */
+export async function updateSubscriptionPlan(
+  token: string,
+  id: string | number,
+  data: UpdateSubscriptionPlanRequest
+): Promise<SubscriptionPlan> {
+  console.log(`[API] Updating subscription plan ID: ${id}`, data);
+  return apiRequest(`/api/v1/admin/subscriptions/${id}`, subscriptionPlanSchema, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Delete a subscription plan tier (Admin)
+ */
+export async function deleteSubscriptionPlan(
+  token: string,
+  id: string | number
+): Promise<SubscriptionPlanActionResponse> {
+  console.log(`[API] Deleting subscription plan ID: ${id}`);
+  return apiRequest(`/api/v1/admin/subscriptions/${id}`, subscriptionPlanActionResponseSchema, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+/**
+ * Fetch subscription events history logs (Admin, paginated)
+ */
+export async function fetchSubscriptionHistory(
+  token: string,
+  page = 1,
+  limit = 10
+): Promise<SubscriptionHistoryResponse> {
+  console.log(`[API] Fetching subscription history Page: ${page}`);
+  return apiRequest("/api/v1/admin/subscriptions/history", subscriptionHistoryResponseSchema, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    params: {
+      page: page.toString(),
+      limit: limit.toString(),
+    },
+  });
+}
+

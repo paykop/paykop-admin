@@ -20,7 +20,7 @@ import { Users, TrendingUp, Heart, CreditCard, ArrowRight, Loader2 } from "lucid
 export default function OverviewTab() {
   const router = useRouter();
   const { getToken } = useAuth();
-  
+
   const { data, loading, fetchDashboard } = useDashboardStore();
 
   useEffect(() => {
@@ -154,9 +154,8 @@ export default function OverviewTab() {
               {chartBars.map((bar, idx) => (
                 <div key={idx} className="flex flex-col items-center gap-2 w-12 h-full justify-end">
                   <div
-                    className={`w-full rounded-md transition-all duration-300 ${bar.height} ${
-                      bar.active ? "bg-blue-600 shadow-md shadow-blue-500/20" : "bg-indigo-100 hover:bg-indigo-200"
-                    }`}
+                    className={`w-full rounded-md transition-all duration-300 ${bar.height} ${bar.active ? "bg-blue-600 shadow-md shadow-blue-500/20" : "bg-indigo-100 hover:bg-indigo-200"
+                      }`}
                   />
                   <span className={`text-[10px] font-bold ${bar.active ? "text-blue-600 font-extrabold" : "text-slate-400"}`}>
                     {bar.label}

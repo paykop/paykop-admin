@@ -47,14 +47,23 @@ export async function apiRequest<TSchema extends z.ZodTypeAny>(
       }
     }
 
+    // Generate idempotency key for specific financial endpoints
+    const isIdempotentEndpoint =
+      endpoint.match(/^\/api\/v1\/admin\/(refunds|subscriptions|campaigns|banners)/) &&
+      ["POST", "PUT"].includes((options.method || "GET").toUpperCase());
+
+    const idempotencyHeader = isIdempotentEndpoint
+      ? { "Idempotency-Key": crypto.randomUUID() }
+      : {};
+
     const response = await axios({
       url: `${API_BASE_URL}${endpoint}`,
       method: (options.method || "GET") as any,
       params,
       headers: {
         "Content-Type": "application/json",
-        "X-Client-Type": "admin",
         "ngrok-skip-browser-warning": "true",
+        ...idempotencyHeader,
         ...options.headers,
       },
       data: requestData,

@@ -16,8 +16,9 @@ interface AdminUsersState {
   loading: boolean;
   detailsLoading: boolean;
   error: string | null;
+  activeRole: string; // July 2026: role filter
   
-  fetchAdminUsers: (getToken: () => Promise<string | null>) => Promise<void>;
+  fetchAdminUsers: (getToken: () => Promise<string | null>, role?: string) => Promise<void>;
   suspendAdminUser: (getToken: () => Promise<string | null>, id: string, suspend: boolean) => Promise<void>;
   verifyAdminUser: (getToken: () => Promise<string | null>, id: string) => Promise<void>;
   
@@ -25,6 +26,7 @@ interface AdminUsersState {
   updateUserDetails: (getToken: () => Promise<string | null>, id: string, data: UpdateUserRequest) => Promise<void>;
   updateUserRoleAction: (getToken: () => Promise<string | null>, id: string, role: string) => Promise<void>;
   clearSelectedUser: () => void;
+  setActiveRole: (role: string) => void;
 }
 
 export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
@@ -33,13 +35,14 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
   loading: false,
   detailsLoading: false,
   error: null,
+  activeRole: "",
   
-  fetchAdminUsers: async (getToken) => {
-    set({ loading: true, error: null });
+  fetchAdminUsers: async (getToken, role) => {
+    set({ loading: true, error: null, activeRole: role || "" });
     try {
       const token = await getToken();
       if (!token) throw new Error("No token provided");
-      const resp = await fetchUsers(token);
+      const resp = await fetchUsers(token, 1, 50, role || undefined);
       set({ users: resp.users || [], error: null });
     } catch (err: any) {
       console.error("[Store] Failed to fetch users", err);
@@ -118,4 +121,5 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
   },
 
   clearSelectedUser: () => set({ selectedUser: null }),
+  setActiveRole: (role: string) => set({ activeRole: role }),
 }));

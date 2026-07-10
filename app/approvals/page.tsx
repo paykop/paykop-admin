@@ -1,14 +1,16 @@
 // src/app/approvals/page.tsx
 "use client";
 
-import React from "react";
-import DashboardLayout from "../../components/DashboardLayout";
-import ApprovalsTab from "../../components/ApprovalsTab";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ApprovalsPage() {
-  return (
-    <DashboardLayout>
-      <ApprovalsTab />
-    </DashboardLayout>
-  );
+  const router = useRouter();
+  
+  useEffect(() => {
+    // The approvals workflow was removed in API V4. Redirect to dashboard.
+    router.push("/");
+  }, [router]);
+
+  return null;
 }

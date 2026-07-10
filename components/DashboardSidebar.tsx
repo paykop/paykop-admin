@@ -14,7 +14,11 @@ import {
   CreditCard,
   Layers,
   Terminal,
-  LogOut
+  LogOut,
+  Package,
+  HeartHandshake,
+  Droplet,
+  LayoutGrid,
 } from "lucide-react";
 
 export default function DashboardSidebar() {
@@ -23,16 +27,18 @@ export default function DashboardSidebar() {
   const { backendUser } = useUserStore();
   const dashboardData = useDashboardStore((state) => state.data);
 
-  const pendingApprovalsCount = dashboardData?.counts?.pending_products || 0;
-
-  const navItems = [
+  const navItems: { id: string; label: string; icon: any; href: string; badge?: number }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard, href: "/" },
-    { id: "approvals", label: "Approvals", icon: CheckSquare, href: "/approvals", badge: pendingApprovalsCount },
+    { id: "products", label: "Products", icon: Package, href: "/products" },
     { id: "users", label: "Users", icon: Users, href: "/users" },
     { id: "payments", label: "Payments", icon: CreditCard, href: "/payments" },
     { id: "subscriptions", label: "Subscriptions", icon: Layers, href: "/subscriptions" },
+    { id: "campaigns", label: "Campaigns", icon: HeartHandshake, href: "/campaigns" },
+    { id: "blood", label: "Blood Requests", icon: Droplet, href: "/blood" },
+    { id: "service-categories", label: "Service Categories", icon: LayoutGrid, href: "/service-categories" },
     { id: "logs", label: "System Logs", icon: Terminal, href: "/logs" },
   ];
+
 
   // Robust real data extraction: Clerk name > DB name > email prefix > fallback
   const clerkName = [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ") || clerkUser?.fullName;
@@ -42,7 +48,7 @@ export default function DashboardSidebar() {
   const emailPrefix = clerkUser?.primaryEmailAddress?.emailAddress
     ? clerkUser.primaryEmailAddress.emailAddress.split("@")[0]
     : "";
-  
+
   // Format email prefix for capitalization (e.g., maha -> Maha)
   const formattedEmailPrefix = emailPrefix
     ? emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)
@@ -80,11 +86,10 @@ export default function DashboardSidebar() {
               <Link
                 key={item.id}
                 href={item.href}
-                className={`flex items-center justify-between px-4 py-3 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-                  isActive
+                className={`flex items-center justify-between px-4 py-3 rounded-lg text-sm font-semibold transition-all cursor-pointer ${isActive
                     ? "bg-slate-800 text-white shadow-sm"
                     : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <Icon className={`w-4 h-4 ${isActive ? "text-blue-400" : "text-slate-400"}`} />
