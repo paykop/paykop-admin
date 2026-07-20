@@ -70,7 +70,7 @@ export default function SubscriptionsTab() {
                 <span>New plan</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl p-6 text-left relative">
+            <DialogContent className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl p-6 text-left">
               <DialogHeader>
                 <DialogTitle className="text-base font-bold text-slate-900 mb-2">Create Membership Tier</DialogTitle>
               </DialogHeader>

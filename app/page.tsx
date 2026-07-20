@@ -12,3 +12,12 @@ export default function HomePage() {
     </DashboardLayout>
   );
 }
+
+
+// export default function HomePage() {
+//   return (
+//     <div style={{ padding: 40 }}>
+//       <h1>Paykop Admin</h1>
+//     </div>
+//   );
+// }
