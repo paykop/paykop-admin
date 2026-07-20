@@ -1,4 +1,5 @@
 // src/services/subscriptionService.ts
+import { z } from "zod";
 import { apiRequest } from "./apiService";
 import { actionResponseSchema } from "../schemas/userSchema";
 import {
@@ -110,4 +111,17 @@ export async function fetchSubscriptionHistory(
     },
   });
 }
+
+/**
+ * Fetch all registered subscription plans (Admin)
+ */
+export async function fetchSubscriptionPlans(token: string): Promise<SubscriptionPlan[]> {
+  console.log(`[API] Fetching all subscription plans`);
+  return apiRequest("/api/v1/admin/subscriptions/plans", z.array(subscriptionPlanSchema), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 

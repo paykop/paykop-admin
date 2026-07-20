@@ -1,7 +1,8 @@
 // src/components/SubscriptionsTab.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { Card, CardContent } from "./ui/card";
 import {
   Dialog,
@@ -11,46 +12,86 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { Plus, Check } from "lucide-react";
-
-interface SubscriptionPlan {
-  id: string;
-  name: string;
-  price: string;
-  users: string;
-  active: boolean;
-  popular?: boolean;
-}
+import { Plus, Check, Trash2, Loader2 } from "lucide-react";
+import {
+  fetchSubscriptionPlans,
+  createSubscriptionPlan,
+  deleteSubscriptionPlan,
+} from "../services/subscriptionService";
+import { SubscriptionPlan } from "../schemas/subscriptionSchema";
 
 export default function SubscriptionsTab() {
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([
-    { id: "s1", name: "Free", price: "₹0", users: "28,400 users", active: true },
-    { id: "s2", name: "Basic", price: "₹199", users: "12,100 users", active: true },
-    { id: "s3", name: "Premium", price: "₹499", users: "7,640 users", active: true, popular: true },
-    { id: "s4", name: "Enterprise", price: "₹2,499", users: "780 users", active: true },
-  ]);
-
+  const { getToken } = useAuth();
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [newPlan, setNewPlan] = useState({ name: "", price: "" });
+  const [newPlan, setNewPlan] = useState({ name: "", price: "", duration_days: "30" });
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPlan.name || !newPlan.price) return;
-
-    const priceFormatted = newPlan.price.startsWith("₹") ? newPlan.price : `₹${newPlan.price}`;
-
-    const created: SubscriptionPlan = {
-      id: `s-${Date.now()}`,
-      name: newPlan.name,
-      price: priceFormatted,
-      users: "0 users",
-      active: true,
-    };
-
-    setPlans((prev) => [...prev, created]);
-    setNewPlan({ name: "", price: "" });
-    setModalOpen(false);
+  const loadPlans = async () => {
+    try {
+      setLoading(true);
+      const token = await getToken();
+      if (!token) return;
+      const data = await fetchSubscriptionPlans(token);
+      setPlans(data);
+    } catch (err) {
+      console.error("Failed to fetch plans:", err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    loadPlans();
+  }, [getToken]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPlan.name || !newPlan.price || !newPlan.duration_days) return;
+
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      const priceInPaise = Math.round(parseFloat(newPlan.price) * 100);
+      const durationDays = parseInt(newPlan.duration_days, 10);
+
+      await createSubscriptionPlan(token, {
+        name: newPlan.name,
+        price: priceInPaise,
+        duration_days: durationDays,
+        is_active: true,
+      });
+
+      setNewPlan({ name: "", price: "", duration_days: "30" });
+      setModalOpen(false);
+      loadPlans();
+    } catch (err) {
+      console.error("Failed to create plan:", err);
+      alert("Error creating plan");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to deactivate/delete this subscription plan?")) return;
+    try {
+      const token = await getToken();
+      if (!token) return;
+      await deleteSubscriptionPlan(token, id);
+      loadPlans();
+    } catch (err) {
+      console.error("Failed to delete plan:", err);
+      alert("Error deactivating plan");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -81,7 +122,7 @@ export default function SubscriptionsTab() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Standard, Growth"
+                    placeholder="e.g. Pro Seller, Growth"
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
                     value={newPlan.name}
                     onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
@@ -93,10 +134,22 @@ export default function SubscriptionsTab() {
                   <input
                     type="number"
                     required
-                    placeholder="e.g. 999"
+                    placeholder="e.g. 499"
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
                     value={newPlan.price}
                     onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1 text-slate-500 uppercase tracking-wider">Duration (Days)</label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="e.g. 30"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
+                    value={newPlan.duration_days}
+                    onChange={(e) => setNewPlan({ ...newPlan, duration_days: e.target.value })}
                   />
                 </div>
 
@@ -116,36 +169,51 @@ export default function SubscriptionsTab() {
 
       {/* Plans List */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {plans.map((plan) => (
-          <Card
-            key={plan.id}
-            className={`relative bg-white border rounded-2xl shadow-sm flex flex-col justify-between min-h-[170px] ${
-              plan.popular ? "border-blue-600 ring-1 ring-blue-600" : "border-slate-200"
-            }`}
-          >
-            {/* Popular Badge */}
-            {plan.popular && (
-              <span className="absolute -top-2.5 right-6 bg-blue-600 text-white text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md tracking-wider z-10">
-                Popular
-              </span>
-            )}
+        {plans.length === 0 ? (
+          <div className="col-span-full bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-500 font-medium">
+            No active subscription plans found. Click &quot;New plan&quot; to configure one.
+          </div>
+        ) : (
+          plans.map((plan) => (
+            <Card
+              key={plan.id}
+              className={`relative bg-white border rounded-2xl shadow-sm flex flex-col justify-between min-h-[190px] border-slate-200`}
+            >
+              <CardContent className="p-6 flex flex-col justify-between h-full w-full">
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm">{plan.name}</h3>
+                  <p className="text-3xl font-extrabold text-slate-900 tracking-tight mt-3">₹{plan.price / 100}</p>
+                  <p className="text-xs text-slate-400 font-semibold mt-1">{plan.duration_days} days validity</p>
+                </div>
 
-            <CardContent className="p-6 flex flex-col justify-between h-full w-full">
-              <div>
-                <h3 className="font-bold text-slate-800 text-sm">{plan.name}</h3>
-                <p className="text-3xl font-extrabold text-slate-900 tracking-tight mt-3">{plan.price}</p>
-                <p className="text-xs text-slate-400 font-semibold mt-1">{plan.users}</p>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 text-[10px] font-bold">
-                  <Check className="w-3 h-3 shrink-0" />
-                  Active
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <div className="mt-4 flex items-center justify-between">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    plan.is_active 
+                      ? "bg-emerald-50 border border-emerald-200 text-emerald-600" 
+                      : "bg-slate-100 border border-slate-200 text-slate-500"
+                  }`}>
+                    {plan.is_active ? (
+                      <>
+                        <Check className="w-3 h-3 shrink-0" />
+                        Active
+                      </>
+                    ) : (
+                      "Suspended"
+                    )}
+                  </span>
+                  
+                  <button
+                    onClick={() => handleDelete(plan.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    title="Deactivate Plan"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

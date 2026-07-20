@@ -36,6 +36,7 @@ export default function DashboardSidebar() {
     { id: "campaigns", label: "Campaigns", icon: HeartHandshake, href: "/campaigns" },
     { id: "blood", label: "Blood Requests", icon: Droplet, href: "/blood" },
     { id: "service-categories", label: "Service Categories", icon: LayoutGrid, href: "/service-categories" },
+    { id: "services", label: "Service Moderation", icon: CheckSquare, href: "/services" },
     { id: "logs", label: "System Logs", icon: Terminal, href: "/logs" },
   ];
 
