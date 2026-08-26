@@ -1,7 +1,21 @@
 // src/schemas/serviceCategorySchema.ts
 import { z } from "zod";
 
-export const serviceCategoryItemSchema: z.ZodType<any> = z.lazy(() =>
+export interface ServiceCategoryItem {
+  id: number;
+  name: string;
+  type: string;
+  parent_id?: number | null;
+  icon?: string | null;
+  subtitle?: string | null;
+  icon_color?: string | null;
+  bg_color?: string | null;
+  is_featured?: boolean;
+  image_url?: string | null;
+  children?: ServiceCategoryItem[];
+}
+
+export const serviceCategoryItemSchema: z.ZodType<ServiceCategoryItem> = z.lazy(() =>
   z.object({
     id: z.number(),
     name: z.string(),
@@ -51,7 +65,6 @@ export const serviceCategoryActionResponseSchema = z.object({
   message: z.string(),
 });
 
-export type ServiceCategoryItem = z.infer<typeof serviceCategoryItemSchema>;
 export type ServiceCategoryListResponse = z.infer<typeof serviceCategoryListResponseSchema>;
 export type CreateServiceCategoryRequest = z.infer<typeof createServiceCategoryRequestSchema>;
 export type UpdateServiceCategoryRequest = z.infer<typeof updateServiceCategoryRequestSchema>;

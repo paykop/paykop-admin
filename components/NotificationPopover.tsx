@@ -84,7 +84,7 @@ export default function NotificationPopover() {
               <div className="p-8 text-center flex flex-col items-center gap-2 text-slate-400">
                 <Inbox className="w-8 h-8 text-slate-300" />
                 <p className="text-xs font-bold text-slate-600">No notifications yet</p>
-                <p className="text-[11px] text-slate-400">You're all caught up on in-app updates!</p>
+                <p className="text-[11px] text-slate-400">You&apos;re all caught up on in-app updates!</p>
               </div>
             ) : (
               notifications.map((item) => (

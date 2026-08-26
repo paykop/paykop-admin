@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
@@ -24,6 +25,7 @@ import {
   Image as ImageIcon,
   ShieldCheck,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { isAdmin } from "@/lib/rbac";
 
@@ -38,7 +40,7 @@ export default function DashboardSidebar({ mobileOpen = false, onClose }: Dashbo
   const { backendUser } = useUserStore();
   const canManageStaff = isAdmin(backendUser?.role);
 
-  const navItems: { id: string; label: string; icon: any; href: string; badge?: number; adminOnly?: boolean }[] = [
+  const navItems: { id: string; label: string; icon: LucideIcon; href: string; badge?: number; adminOnly?: boolean }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard, href: "/" },
     { id: "products", label: "Products", icon: Package, href: "/products" },
     { id: "categories", label: "Product Categories", icon: FolderTree, href: "/categories", adminOnly: true },
@@ -153,9 +155,12 @@ export default function DashboardSidebar({ mobileOpen = false, onClose }: Dashbo
         <div className="p-4 border-t border-slate-800 flex items-center justify-between gap-3 bg-slate-900/60 shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
             {backendUser?.profile_picture_url ? (
-              <img
+              <Image
                 src={backendUser.profile_picture_url}
                 alt="Avatar"
+                width={40}
+                height={40}
+                unoptimized
                 className="w-10 h-10 rounded-full border border-slate-700 bg-slate-800 shrink-0 object-cover"
               />
             ) : (

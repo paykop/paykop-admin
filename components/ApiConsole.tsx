@@ -9,13 +9,14 @@ import {
   fetchUserPermissions,
 } from "../services/userService";
 import { ApiError } from "../services/apiService";
+import { getErrorMessage } from "../lib/errors";
 
 interface ConsoleLog {
   timestamp: string;
   method: string;
   url: string;
   status: string;
-  payload: any;
+  payload: unknown;
   isError: boolean;
 }
 
@@ -24,7 +25,7 @@ export default function ApiConsole() {
   const [running, setRunning] = useState<string | null>(null);
   const [logs, setLogs] = useState<ConsoleLog[]>([]);
 
-  const addLog = (method: string, url: string, status: string, payload: any, isError = false) => {
+  const addLog = (method: string, url: string, status: string, payload: unknown, isError = false) => {
     const newLog: ConsoleLog = {
       timestamp: new Date().toLocaleTimeString(),
       method,
@@ -59,7 +60,7 @@ export default function ApiConsole() {
           addLog("GET", "/api/v1/users/me/permissions", "200 OK", res);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       const isHealth = testName === "health";
       const method = "GET";
       const url = isHealth 
@@ -77,7 +78,7 @@ export default function ApiConsole() {
         
         addLog(method, url, statusString, err.info || { error: err.message }, true);
       } else {
-        addLog(method, url, "Network Error", { error: err?.message || "Failed to contact Go backend server." }, true);
+        addLog(method, url, "Network Error", { error: getErrorMessage(err, "Failed to contact Go backend server.") }, true);
       }
     } finally {
       setRunning(null);
@@ -182,7 +183,7 @@ export default function ApiConsole() {
           <div className="w-full h-[220px] bg-slate-950 border border-slate-900 rounded-xl p-4 font-mono text-[11px] overflow-y-auto space-y-3.5 scrollbar-thin scrollbar-thumb-slate-800">
             {logs.length === 0 ? (
               <div className="h-full flex items-center justify-center text-slate-600 italic">
-                No logs recorded. Click "Run" on any Admin API above to test middleware gates.
+                No logs recorded. Click &quot;Run&quot; on any Admin API above to test middleware gates.
               </div>
             ) : (
               logs.map((log, index) => (

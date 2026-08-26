@@ -1,5 +1,5 @@
 // src/services/apiService.ts
-import axios from "axios";
+import axios, { type Method } from "axios";
 import { z } from "zod";
 import api, { postWithIdempotency, setTokens, getAccessToken, getRefreshToken, clearTokens, handleLogout } from "../lib/api/client";
 
@@ -8,7 +8,7 @@ export { api, postWithIdempotency, setTokens, getAccessToken, getRefreshToken, c
 interface FetchOptions {
   method?: string;
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   params?: Record<string, string>;
 }
 
@@ -53,7 +53,7 @@ export async function apiRequest<TSchema extends z.ZodTypeAny>(
     // Use interceptor-configured api client
     const response = await api({
       url: endpoint,
-      method: method as any,
+      method: method as Method,
       params,
       headers: {
         ...options.headers,

@@ -23,3 +23,4 @@ export const notificationActionResponseSchema = z.object({
 
 export type NotificationItem = z.infer<typeof notificationItemSchema>;
 export type NotificationListResponse = z.infer<typeof notificationListResponseSchema>;
+export type NotificationActionResponse = z.infer<typeof notificationActionResponseSchema>;

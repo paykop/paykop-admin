@@ -15,6 +15,9 @@ import {
   Plus, UserMinus, UserPlus, Users, BadgeCheck, Handshake,
 } from "lucide-react";
 
+import { AgentAssignmentSummary } from "../schemas/agentSchema";
+import { getErrorMessage } from "../lib/errors";
+
 type CreateMode = "promote" | "create";
 
 export default function AgentsTab() {
@@ -105,8 +108,8 @@ export default function AgentsTab() {
         });
       }
       setCreateModalOpen(false);
-    } catch (err: any) {
-      setFormError(err.message || "Failed to create agent");
+    } catch (err: unknown) {
+      setFormError(getErrorMessage(err, "Failed to create agent"));
     } finally {
       setProcessingId(null);
     }
@@ -121,8 +124,8 @@ export default function AgentsTab() {
         setViewModalOpen(false);
         clearSelectedAgent();
       }
-    } catch (err: any) {
-      alert(err.message || "Failed to demote agent");
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to demote agent"));
     } finally {
       setProcessingId(null);
     }
@@ -150,8 +153,8 @@ export default function AgentsTab() {
       if (viewModalOpen && selectedAgent?.id === assignAgentId) {
         await fetchAgentDetail(getToken, assignAgentId);
       }
-    } catch (err: any) {
-      setFormError(err.message || "Failed to assign seller");
+    } catch (err: unknown) {
+      setFormError(getErrorMessage(err, "Failed to assign seller"));
     } finally {
       setProcessingId(null);
     }
@@ -162,8 +165,8 @@ export default function AgentsTab() {
     setProcessingId(`assign-${assignmentId}`);
     try {
       await revokeSellerAssignment(getToken, assignmentId, agentId);
-    } catch (err: any) {
-      alert(err.message || "Failed to revoke assignment");
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to revoke assignment"));
     } finally {
       setProcessingId(null);
     }
@@ -403,7 +406,7 @@ export default function AgentsTab() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {(assignments.length ? assignments : selectedAgent.assignments || []).map((a) => (
+                          {(assignments.length ? assignments : selectedAgent.assignments || []).map((a: AgentAssignmentSummary) => (
                             <TableRow key={a.id} className="border-b border-slate-100">
                               <TableCell className="px-3 py-2.5">
                                 <div className="font-semibold text-slate-700">{a.seller_name || "—"}</div>

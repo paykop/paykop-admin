@@ -27,6 +27,7 @@ import {
 } from "../services/subscriptionService";
 import { SubscriptionPlan, ReconciliationItem, SubscriptionHistoryItem } from "../schemas/subscriptionSchema";
 import { toast } from "./ui/toast";
+import { getErrorMessage } from "../lib/errors";
 
 type Panel = "plans" | "history" | "reconciliation";
 
@@ -60,21 +61,6 @@ export default function SubscriptionsTab() {
     }
   };
 
-  const loadHistory = async () => {
-    try {
-      setLoading(true);
-      const token = await getToken();
-      if (!token) return;
-      const data = await fetchSubscriptionHistory(token);
-      setHistory(data.subscriptions || []);
-    } catch (err) {
-      console.error("Failed to fetch history:", err);
-      toast.error("Failed to load subscription history.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadReconciliations = async () => {
     try {
       setLoading(true);
@@ -95,12 +81,48 @@ export default function SubscriptionsTab() {
   };
 
   useEffect(() => {
-    if (panel === "plans") loadPlans();
-    else if (panel === "history") loadHistory();
-    else loadReconciliations();
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const token = await getToken();
+        if (cancelled || !token) return;
+
+        if (panel === "plans") {
+          const data = await fetchSubscriptionPlans(token);
+          if (!cancelled) setPlans(data);
+        } else if (panel === "history") {
+          const data = await fetchSubscriptionHistory(token);
+          if (!cancelled) setHistory(data.subscriptions || []);
+        } else {
+          const needPlans = plans.length === 0;
+          const [data, planData] = await Promise.all([
+            fetchSubscriptionReconciliations(token),
+            needPlans ? fetchSubscriptionPlans(token) : Promise.resolve(plans),
+          ]);
+          if (cancelled) return;
+          setItems(data.items || []);
+          if (needPlans) setPlans(planData);
+        }
+      } catch (err) {
+        console.error(err);
+        if (panel === "history") toast.error("Failed to load subscription history.");
+        if (panel === "reconciliation") toast.error("Failed to load reconciliation queue.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getToken, panel]);
 
+  const switchPanel = (next: Panel) => {
+    setLoading(true);
+    setPanel(next);
+  };
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canManagePlans || !newPlan.name || !newPlan.price || !newPlan.duration_days) return;
@@ -158,9 +180,9 @@ export default function SubscriptionsTab() {
       await deleteSubscriptionPlan(token, id);
       toast.success("Subscription plan deleted successfully!");
       loadPlans();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to delete plan:", err);
-      const msg = err?.message || "";
+      const msg = getErrorMessage(err, "");
       if (msg.includes("in use") || msg.includes("cannot be modified or deleted")) {
         toast.error(
           "Cannot delete plan because active user subscriptions or payments are linked to it.",
@@ -186,8 +208,8 @@ export default function SubscriptionsTab() {
       await resolveSubscriptionReconciliation(token, id, planId);
       toast.success("Reconciliation resolved successfully.");
       loadReconciliations();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to resolve reconciliation.");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to resolve reconciliation."));
     } finally {
       setProcessingId(null);
     }
@@ -211,7 +233,7 @@ export default function SubscriptionsTab() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 flex-wrap">
             <button
-              onClick={() => setPanel("plans")}
+              onClick={() => switchPanel("plans")}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
                 panel === "plans" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
               }`}
@@ -219,7 +241,7 @@ export default function SubscriptionsTab() {
               Plans
             </button>
             <button
-              onClick={() => setPanel("history")}
+              onClick={() => switchPanel("history")}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
                 panel === "history" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
               }`}
@@ -227,7 +249,7 @@ export default function SubscriptionsTab() {
               History
             </button>
             <button
-              onClick={() => setPanel("reconciliation")}
+              onClick={() => switchPanel("reconciliation")}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
                 panel === "reconciliation" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
               }`}

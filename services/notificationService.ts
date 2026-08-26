@@ -4,6 +4,7 @@ import {
   notificationListResponseSchema,
   notificationActionResponseSchema,
   NotificationListResponse,
+  NotificationActionResponse,
 } from "../schemas/notificationSchema";
 
 /**
@@ -28,7 +29,7 @@ export async function fetchNotifications(
 /**
  * Mark a single in-app notification as read (PATCH /api/v1/notifications/:id/read)
  */
-export async function markNotificationAsRead(token: string, id: number): Promise<any> {
+export async function markNotificationAsRead(token: string, id: number): Promise<NotificationActionResponse> {
   return apiRequest(`/api/v1/notifications/${id}/read`, notificationActionResponseSchema, {
     method: "PATCH",
     headers: {
@@ -40,7 +41,7 @@ export async function markNotificationAsRead(token: string, id: number): Promise
 /**
  * Mark all in-app notifications as read (PATCH /api/v1/notifications/read-all)
  */
-export async function markAllNotificationsAsRead(token: string): Promise<any> {
+export async function markAllNotificationsAsRead(token: string): Promise<NotificationActionResponse> {
   return apiRequest("/api/v1/notifications/read-all", notificationActionResponseSchema, {
     method: "PATCH",
     headers: {

@@ -1,11 +1,9 @@
 // src/services/serviceCategoryService.ts
-import { z } from "zod";
 import { apiRequest } from "./apiService";
 import {
   serviceCategoryListResponseSchema,
   serviceCategoryItemSchema,
   serviceCategoryActionResponseSchema,
-  ServiceCategoryListResponse,
   ServiceCategoryItem,
   CreateServiceCategoryRequest,
   UpdateServiceCategoryRequest,

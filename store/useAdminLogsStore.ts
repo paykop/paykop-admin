@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { AuditLogListItem } from "../schemas/logSchema";
 import { fetchAdminLogs } from "../services/logService";
+import { getErrorMessage } from "../lib/errors";
 
 interface AdminLogsState {
   logs: AuditLogListItem[];
@@ -24,9 +25,9 @@ export const useAdminLogsStore = create<AdminLogsState>((set) => ({
       console.log(`[Store] Fetching logs page ${page}`);
       const resp = await fetchAdminLogs(token, page, limit);
       set({ logs: resp.logs || [], total: resp.total || 0, error: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch logs", err);
-      set({ error: err.message || "Failed to fetch logs" });
+      set({ error: getErrorMessage(err, "Failed to fetch logs") });
     } finally {
       set({ loading: false });
     }

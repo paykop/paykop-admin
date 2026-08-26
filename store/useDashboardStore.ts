@@ -3,6 +3,7 @@ import { DashboardResponse } from "../schemas/dashboardSchema";
 import { fetchDashboardStats } from "../services/dashboardService";
 import { syncUser } from "../services/userService";
 import { ApiError } from "../services/apiService";
+import { getErrorMessage } from "../lib/errors";
 
 interface DashboardState {
   data: DashboardResponse | null;
@@ -22,12 +23,12 @@ export const useDashboardStore = create<DashboardState>((set) => ({
       if (!token) throw new Error("No token provided");
       const stats = await fetchDashboardStats(token);
       set({ data: stats, error: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to fetch dashboard stats", err);
 
       const isUserNotFound =
         (err instanceof ApiError && (err.status === 401 || err.status === 404 || err.status === 400)) ||
-        (err?.message && String(err.message).toLowerCase().includes("user not found"));
+        getErrorMessage(err).toLowerCase().includes("user not found");
 
       if (isUserNotFound) {
         try {
@@ -43,7 +44,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
         }
       }
 
-      set({ error: err.message || "Failed to fetch dashboard stats" });
+      set({ error: getErrorMessage(err, "Failed to fetch dashboard stats") });
     } finally {
       set({ loading: false });
     }

@@ -11,6 +11,7 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Loader2, Eye, Plus, UserMinus, Headset } from "lucide-react";
+import { getErrorMessage } from "../lib/errors";
 
 type CreateMode = "promote" | "create";
 
@@ -90,8 +91,8 @@ export default function SupportTab() {
         });
       }
       setCreateOpen(false);
-    } catch (err: any) {
-      setFormError(err.message || "Failed to create support staff");
+    } catch (err: unknown) {
+      setFormError(getErrorMessage(err, "Failed to create support staff"));
     } finally {
       setProcessingId(null);
     }
@@ -104,8 +105,8 @@ export default function SupportTab() {
       await revokeSupport(getToken, id);
       setViewOpen(false);
       clearSelected();
-    } catch (err: any) {
-      alert(err.message || "Failed to revoke support role");
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to revoke support role"));
     } finally {
       setProcessingId(null);
     }

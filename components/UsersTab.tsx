@@ -16,6 +16,10 @@ import {
   LogIn, Star, Trophy, Award, Handshake, UserCog,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import { UpdateUserRequest, UserDetailsResponse } from "../schemas/userSchema";
+
+type EditFormState = { first_name: string; last_name: string; role: string };
 
 export default function UsersTab() {
   const { getToken } = useAuth();
@@ -28,7 +32,6 @@ export default function UsersTab() {
 
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", role: "" });
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [roleFilter, setRoleFilter] = useState("all");
 
@@ -36,16 +39,6 @@ export default function UsersTab() {
     fetchAdminUsers(getToken, roleFilter === "all" ? undefined : roleFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getToken, roleFilter]);
-
-  useEffect(() => {
-    if (selectedUser) {
-      setEditForm({
-        first_name: selectedUser.first_name || "",
-        last_name: selectedUser.last_name || "",
-        role: (selectedUser.role || "buyer").toLowerCase(),
-      });
-    }
-  }, [selectedUser]);
 
   const handleToggleStatus = async (id: string, action: "suspend" | "unsuspend" | "verify") => {
     setProcessingId(id);
@@ -65,12 +58,11 @@ export default function UsersTab() {
     await fetchUserDetail(getToken, id);
   };
 
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveEdit = async (editForm: EditFormState) => {
     if (!selectedUser) return;
     setProcessingId("save-edit");
     try {
-      const payload: any = { first_name: editForm.first_name, last_name: editForm.last_name };
+      const payload: UpdateUserRequest = { first_name: editForm.first_name, last_name: editForm.last_name };
       const newRole = editForm.role?.trim().toLowerCase();
       const oldRole = selectedUser.role?.trim().toLowerCase();
       if (newRole && newRole !== oldRole) {
@@ -243,7 +235,7 @@ export default function UsersTab() {
               <div className="bg-gradient-to-br from-slate-800 to-slate-900 px-6 pt-6 pb-8">
                 <div className="flex items-center gap-4">
                   {selectedUser.profile_picture_url ? (
-                    <img src={selectedUser.profile_picture_url} alt="Avatar" className="w-16 h-16 rounded-2xl object-cover border-2 border-white/20 shadow-lg" />
+                    <Image src={selectedUser.profile_picture_url} alt="Avatar" width={64} height={64} unoptimized className="w-16 h-16 rounded-2xl object-cover border-2 border-white/20 shadow-lg" />
                   ) : (() => {
                     const name = `${selectedUser.first_name} ${selectedUser.last_name}`.trim() || "U";
                     const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
@@ -275,7 +267,7 @@ export default function UsersTab() {
                 </Section>
                 <Section title="Account Information">
                   <InfoRow icon={<User className="w-3.5 h-3.5" />} label="User ID" value={selectedUser.id} mono />
-                  <InfoRow icon={<LogIn className="w-3.5 h-3.5" />} label="Auth Provider" value={(selectedUser as any).auth_provider || selectedUser.auth_source || "—"} />
+                  <InfoRow icon={<LogIn className="w-3.5 h-3.5" />} label="Auth Provider" value={selectedUser.auth_provider || selectedUser.auth_source || "—"} />
                   <InfoRow icon={<BadgeCheck className="w-3.5 h-3.5" />} label="KYC Status" value={selectedUser.kyc_status} badge badgeColor={selectedUser.kyc_status === "verified" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"} />
                   <InfoRow icon={<ShieldCheck className="w-3.5 h-3.5" />} label="Onboarding" value={selectedUser.is_onboarded ? "Completed" : "Pending"} badge badgeColor={selectedUser.is_onboarded ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"} />
                   <InfoRow icon={<CreditCard className="w-3.5 h-3.5" />} label="Subscription" value={selectedUser.has_subscription ? "Active" : "None"} badge badgeColor={selectedUser.has_subscription ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-500"} />
@@ -377,61 +369,101 @@ export default function UsersTab() {
           {detailsLoading ? (
             <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
           ) : selectedUser ? (
-            <form onSubmit={handleSaveEdit} className="space-y-4 pt-4 text-sm">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">First Name</label>
-                  <input value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} className="w-full px-3 py-2 border rounded-md outline-none focus:border-blue-500" required />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Last Name</label>
-                  <input value={editForm.last_name} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} className="w-full px-3 py-2 border rounded-md outline-none focus:border-blue-500" required />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500">Email Address</label>
-                <input value={selectedUser.email || ""} disabled className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">KYC Status</label>
-                  <input value={selectedUser.kyc_status || "N/A"} disabled className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500 capitalize" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Account Status</label>
-                  <input value={selectedUser.is_suspended ? "Suspended" : "Active"} disabled className={`w-full px-3 py-2 border rounded-md bg-slate-50 ${selectedUser.is_suspended ? "text-rose-500 font-bold" : "text-emerald-500 font-bold"}`} />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500">Role</label>
-                <Select value={editForm.role} onValueChange={(val) => setEditForm({ ...editForm, role: val })} disabled={!canChangeRoles}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Select role" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="buyer">Buyer</SelectItem>
-                    <SelectItem value="seller">Seller</SelectItem>
-                    <SelectItem value="support">Support</SelectItem>
-                    <SelectItem value="agent">Agent</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-[11px] text-slate-400">
-                  Promote/demote agents from the{" "}
-                  <Link href="/agents" className="text-blue-600 font-semibold underline underline-offset-2">Agents</Link>{" "}
-                  page (not here).
-                </p>
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => { setEditModalOpen(false); clearSelectedUser(); }}>Cancel</Button>
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700" disabled={processingId === "save-edit"}>
-                  {processingId === "save-edit" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
-                </Button>
-              </div>
-            </form>
+            <EditUserForm
+              key={selectedUser.id}
+              selectedUser={selectedUser}
+              canChangeRoles={canChangeRoles}
+              processingId={processingId}
+              onSave={handleSaveEdit}
+              onCancel={() => {
+                setEditModalOpen(false);
+                clearSelectedUser();
+              }}
+            />
           ) : (
             <div className="p-4 text-center text-rose-500">Failed to load user details.</div>
           )}
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function EditUserForm({
+  selectedUser,
+  canChangeRoles,
+  processingId,
+  onSave,
+  onCancel,
+}: {
+  selectedUser: UserDetailsResponse;
+  canChangeRoles: boolean;
+  processingId: string | null;
+  onSave: (form: EditFormState) => void;
+  onCancel: () => void;
+}) {
+  const [editForm, setEditForm] = useState<EditFormState>({
+    first_name: selectedUser.first_name || "",
+    last_name: selectedUser.last_name || "",
+    role: (selectedUser.role || "buyer").toLowerCase(),
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(editForm);
+      }}
+      className="space-y-4 pt-4 text-sm"
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-500">First Name</label>
+          <input value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} className="w-full px-3 py-2 border rounded-md outline-none focus:border-blue-500" required />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-500">Last Name</label>
+          <input value={editForm.last_name} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} className="w-full px-3 py-2 border rounded-md outline-none focus:border-blue-500" required />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-xs font-semibold text-slate-500">Email Address</label>
+        <input value={selectedUser.email || ""} disabled className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-500">KYC Status</label>
+          <input value={selectedUser.kyc_status || "N/A"} disabled className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500 capitalize" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-500">Account Status</label>
+          <input value={selectedUser.is_suspended ? "Suspended" : "Active"} disabled className={`w-full px-3 py-2 border rounded-md bg-slate-50 ${selectedUser.is_suspended ? "text-rose-500 font-bold" : "text-emerald-500 font-bold"}`} />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-xs font-semibold text-slate-500">Role</label>
+        <Select value={editForm.role} onValueChange={(val) => setEditForm({ ...editForm, role: val })} disabled={!canChangeRoles}>
+          <SelectTrigger className="w-full"><SelectValue placeholder="Select role" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="buyer">Buyer</SelectItem>
+            <SelectItem value="seller">Seller</SelectItem>
+            <SelectItem value="support">Support</SelectItem>
+            <SelectItem value="agent">Agent</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-[11px] text-slate-400">
+          Promote/demote agents from the{" "}
+          <Link href="/agents" className="text-blue-600 font-semibold underline underline-offset-2">Agents</Link>{" "}
+          page (not here).
+        </p>
+      </div>
+      <div className="flex justify-end gap-2 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+        <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700" disabled={processingId === "save-edit"}>
+          {processingId === "save-edit" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
+        </Button>
+      </div>
+    </form>
   );
 }
 

@@ -1,8 +1,6 @@
 import { apiRequest } from "./apiService";
 import {
   bannerItemSchema,
-  createBannerRequestSchema,
-  updateBannerRequestSchema,
   bannerActionResponseSchema,
   BannerItem,
   CreateBannerRequest,

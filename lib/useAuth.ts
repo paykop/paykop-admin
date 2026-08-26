@@ -1,21 +1,17 @@
 // src/lib/useAuth.ts
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { getAccessToken, clearTokens, handleLogout } from "./api/client";
 import { useUserStore } from "../store/useUserStore";
 import { logoutAdmin } from "../services/authService";
 
-export function useAuth() {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
-  const backendUser = useUserStore((state) => state.backendUser);
+const emptySubscribe = () => () => {};
 
-  useEffect(() => {
-    const currentToken = getAccessToken();
-    setToken(currentToken);
-    setIsLoaded(true);
-  }, []);
+export function useAuth() {
+  const isLoaded = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const token = useSyncExternalStore(emptySubscribe, getAccessToken, () => null);
+  const backendUser = useUserStore((state) => state.backendUser);
 
   const getToken = useCallback(async (): Promise<string | null> => {
     return getAccessToken();

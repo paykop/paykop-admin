@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Button } from "./ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "./ui/toast";
+import { getErrorMessage } from "../lib/errors";
 
 const PAYMENT_STATUSES = [
   "all",
@@ -69,8 +70,8 @@ export default function PaymentsTab() {
     try {
       await processPaymentRefund(getToken, id);
       toast.success("Refund processed.");
-    } catch (err: any) {
-      toast.error(err?.message || "Refund failed.");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Refund failed."));
     } finally {
       setProcessingId(null);
     }

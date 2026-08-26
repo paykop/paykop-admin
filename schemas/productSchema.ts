@@ -17,7 +17,7 @@ export const productResponseSchema = z.object({
   average_rating: z.number().optional().default(0),
   review_count: z.number().optional().default(0),
   // July 2026: reviews now included in GET /products/:id detail
-  reviews: z.array(z.any()).optional().default([]),
+  reviews: z.array(z.unknown()).optional().default([]),
 });
 
 export const productListResponseSchema = z.object({
@@ -30,8 +30,8 @@ export type ProductListResponse = z.infer<typeof productListResponseSchema>;
 
 export const feedResponseSchema = z.object({
   featured_products: z.array(productResponseSchema),
-  recommended_services: z.array(z.any()),
-  urgent_donations: z.array(z.any()),
+  recommended_services: z.array(z.unknown()),
+  urgent_donations: z.array(z.unknown()),
 });
 
 export type FeedResponse = z.infer<typeof feedResponseSchema>;

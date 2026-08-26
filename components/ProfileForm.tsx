@@ -1,45 +1,60 @@
 // src/components/ProfileForm.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
-import { updateProfileSchema, UpdateProfileInput } from "../schemas/userSchema";
+import { updateProfileSchema, UpdateProfileInput, BackendUser } from "../schemas/userSchema";
 import { updateUserProfile } from "../services/userService";
 import { Loader2, Settings } from "lucide-react";
+import { getErrorMessage } from "../lib/errors";
 
 export default function ProfileForm() {
   const { backendUser, fetchProfile } = useUserStore();
   const { getToken } = useAuth();
-  
+
+  if (!backendUser) {
+    return (
+      <div className="w-full max-w-md mx-auto p-6 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl shadow-2xl text-slate-100 flex justify-center">
+        <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+      </div>
+    );
+  }
+
+  return (
+    <ProfileFormFields
+      key={backendUser.id}
+      backendUser={backendUser}
+      fetchProfile={fetchProfile}
+      getToken={getToken}
+    />
+  );
+}
+
+function ProfileFormFields({
+  backendUser,
+  fetchProfile,
+  getToken,
+}: {
+  backendUser: BackendUser;
+  fetchProfile: (getToken?: () => Promise<string | null>) => Promise<BackendUser | null>;
+  getToken: () => Promise<string | null>;
+}) {
   const [formData, setFormData] = useState<UpdateProfileInput>({
-    first_name: "",
-    last_name: "",
-    phone: "",
-    address: "",
+    first_name: backendUser.first_name || "",
+    last_name: backendUser.last_name || "",
+    phone: backendUser.phone || "",
+    address: backendUser.address || "",
   });
-  
+
   const [errors, setErrors] = useState<Partial<Record<keyof UpdateProfileInput, string>>>({});
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // Sync state from backendUser when loaded
-  useEffect(() => {
-    if (backendUser) {
-      setFormData({
-        first_name: backendUser.first_name || "",
-        last_name: backendUser.last_name || "",
-        phone: backendUser.phone || "",
-        address: backendUser.address || "",
-      });
-    }
-  }, [backendUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuccessMsg(null);
 
-    // Validate with Zod
     const result = updateProfileSchema.safeParse(formData);
 
     if (!result.success) {
@@ -61,15 +76,13 @@ export default function ProfileForm() {
         throw new Error("Unauthorized: No authentication token found");
       }
 
-      // PATCH to backend using our user service
       await updateUserProfile(token, result.data);
 
       setSuccessMsg("Admin profile updated successfully!");
-      // Reload profile to refresh main layout
       await fetchProfile(getToken);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Profile update failed:", err);
-      setErrors({ first_name: err?.message || "Failed to update profile." });
+      setErrors({ first_name: getErrorMessage(err, "Failed to update profile.") });
     } finally {
       setSaving(false);
     }

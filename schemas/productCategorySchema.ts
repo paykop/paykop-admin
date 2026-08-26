@@ -1,7 +1,17 @@
 // src/schemas/productCategorySchema.ts
 import { z } from "zod";
 
-export const productCategoryItemSchema: z.ZodType<any> = z.lazy(() =>
+export interface ProductCategoryItem {
+  id: number;
+  name: string;
+  parent_id?: number | null;
+  image_url?: string | null;
+  children?: ProductCategoryItem[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const productCategoryItemSchema: z.ZodType<ProductCategoryItem> = z.lazy(() =>
   z.object({
     id: z.number(),
     name: z.string(),
@@ -35,7 +45,6 @@ export const productCategoryActionResponseSchema = z.object({
   message: z.string(),
 });
 
-export type ProductCategoryItem = z.infer<typeof productCategoryItemSchema>;
 export type ProductCategoryListResponse = z.infer<typeof productCategoryListResponseSchema>;
 export type CreateProductCategoryRequest = z.infer<typeof createProductCategoryRequestSchema>;
 export type UpdateProductCategoryRequest = z.infer<typeof updateProductCategoryRequestSchema>;

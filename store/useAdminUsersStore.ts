@@ -1,6 +1,7 @@
 // src/store/useAdminUsersStore.ts
 import { create } from "zustand";
 import { UserListItem, UserDetailsResponse, UpdateUserRequest } from "../schemas/userSchema";
+import { getErrorMessage } from "../lib/errors";
 import { 
   fetchUsers, 
   suspendUser, 
@@ -44,9 +45,9 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
       if (!token) throw new Error("No token provided");
       const resp = await fetchUsers(token, 1, 50, role || undefined);
       set({ users: resp.users || [], error: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch users", err);
-      set({ error: err.message || "Failed to fetch users" });
+      set({ error: getErrorMessage(err, "Failed to fetch users") });
     } finally {
       set({ loading: false });
     }
@@ -59,7 +60,7 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
       console.log(`[Store] Suspending user ${id} (status: ${suspend})`);
       await suspendUser(token, id, suspend);
       await get().fetchAdminUsers(getToken);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to suspend user", err);
     }
   },
@@ -71,7 +72,7 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
       console.log(`[Store] Verifying user ${id}`);
       await verifyUser(token, id);
       await get().fetchAdminUsers(getToken);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to verify user", err);
     }
   },
@@ -84,9 +85,9 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
       console.log(`[Store] Fetching details for user ${id}`);
       const details = await getUser(token, id);
       set({ selectedUser: details, error: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch user details", err);
-      set({ error: err.message || "Failed to fetch user details" });
+      set({ error: getErrorMessage(err, "Failed to fetch user details") });
     } finally {
       set({ detailsLoading: false });
     }
@@ -100,7 +101,7 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
       await updateUser(token, id, data);
       await get().fetchUserDetail(getToken, id); // Refresh details
       await get().fetchAdminUsers(getToken); // Refresh list
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to update user details", err);
       throw err;
     }
@@ -114,7 +115,7 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
       await updateUserRole(token, id, role);
       await get().fetchUserDetail(getToken, id); // Refresh details
       await get().fetchAdminUsers(getToken); // Refresh list
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to update user role", err);
       throw err;
     }

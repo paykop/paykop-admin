@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { PaymentItem, TransactionItem } from "../schemas/paymentSchema";
 import { fetchPayments, processRefund, fetchTransactionReport } from "../services/paymentService";
+import { getErrorMessage } from "../lib/errors";
 
 interface AdminPaymentsState {
   payments: PaymentItem[];
@@ -54,9 +55,9 @@ export const useAdminPaymentsStore = create<AdminPaymentsState>((set, get) => ({
       console.log(`[Store] Fetching payments page ${page}`);
       const resp = await fetchPayments(token, page, limit, status, startDate, endDate);
       set({ payments: resp.payments || [], total: resp.total || 0, error: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch payments", err);
-      set({ error: err.message || "Failed to fetch payments" });
+      set({ error: getErrorMessage(err, "Failed to fetch payments") });
     } finally {
       set({ loading: false });
     }
@@ -71,9 +72,9 @@ export const useAdminPaymentsStore = create<AdminPaymentsState>((set, get) => ({
       await processRefund(token, id);
       // Re-fetch current payment list to sync state
       await get().fetchAdminPayments(getToken);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to process refund", err);
-      set({ error: err.message || "Failed to process refund" });
+      set({ error: getErrorMessage(err, "Failed to process refund") });
       throw err;
     } finally {
       set({ loading: false });
@@ -93,9 +94,9 @@ export const useAdminPaymentsStore = create<AdminPaymentsState>((set, get) => ({
         reportCount: resp.count || 0,
         error: null,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch transaction report", err);
-      set({ error: err.message || "Failed to fetch transaction report" });
+      set({ error: getErrorMessage(err, "Failed to fetch transaction report") });
     } finally {
       set({ reportLoading: false });
     }

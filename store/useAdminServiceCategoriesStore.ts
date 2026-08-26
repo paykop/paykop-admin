@@ -1,6 +1,7 @@
 // src/store/useAdminServiceCategoriesStore.ts
 import { create } from "zustand";
 import { ApiError } from "../services/apiService";
+import { getErrorMessage } from "../lib/errors";
 import {
   ServiceCategoryItem,
   CreateServiceCategoryRequest,
@@ -45,15 +46,15 @@ export const useAdminServiceCategoriesStore = create<AdminServiceCategoriesState
       const token = await getToken();
       if (!token) throw new Error("No token");
       const resp = await fetchAdminServiceCategories(token);
-      set({ categories: Array.isArray(resp) ? resp : (resp as any)?.categories || [], error: null });
-    } catch (err: any) {
+      set({ categories: Array.isArray(resp) ? resp : [], error: null });
+    } catch (err: unknown) {
       // 404 means endpoint not yet deployed — show empty state gracefully
       if (err instanceof ApiError && err.status === 404) {
         console.warn("[Store] Service categories endpoint not available yet (404)");
         set({ categories: [], error: null });
       } else {
         console.error("[Store] Failed to fetch service categories", err);
-        set({ error: err.message || "Failed to fetch service categories" });
+        set({ error: getErrorMessage(err, "Failed to fetch service categories") });
       }
     } finally {
       set({ loading: false });
@@ -66,7 +67,7 @@ export const useAdminServiceCategoriesStore = create<AdminServiceCategoriesState
       if (!token) throw new Error("No token");
       await createAdminServiceCategory(token, data);
       await get().fetchCategories(getToken);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to create service category", err);
       if (err instanceof ApiError && err.status === 404) {
         throw new Error("Service Categories API is not yet available on the backend.");
@@ -81,7 +82,7 @@ export const useAdminServiceCategoriesStore = create<AdminServiceCategoriesState
       if (!token) throw new Error("No token");
       await updateAdminServiceCategory(token, id, data);
       await get().fetchCategories(getToken);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to update service category", err);
       throw err;
     }
@@ -93,7 +94,7 @@ export const useAdminServiceCategoriesStore = create<AdminServiceCategoriesState
       if (!token) throw new Error("No token");
       await deleteAdminServiceCategory(token, id);
       await get().fetchCategories(getToken);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to delete service category", err);
       if (err instanceof ApiError && err.status === 404) {
         throw new Error("Service Categories API is not yet available on the backend.");

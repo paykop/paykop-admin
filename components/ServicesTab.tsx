@@ -28,7 +28,6 @@ export default function ServicesTab() {
 
   const loadServices = useCallback(async () => {
     try {
-      setLoading(true);
       const token = await getToken();
       const data = await fetchAdminServices(token || undefined, page, limit, filterStatus || undefined);
       setServices(data.services || []);
@@ -41,11 +40,31 @@ export default function ServicesTab() {
   }, [getToken, page, limit, filterStatus]);
 
   useEffect(() => {
-    loadServices();
-  }, [loadServices]);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const token = await getToken();
+        if (cancelled) return;
+        const data = await fetchAdminServices(token || undefined, page, limit, filterStatus || undefined);
+        if (cancelled) return;
+        setServices(data.services || []);
+        setTotal(data.total || 0);
+      } catch (err) {
+        console.error("Failed to load services:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken, page, limit, filterStatus]);
 
   // Reset page when status filter changes
   const handleFilterChange = (status: string) => {
+    setLoading(true);
     setFilterStatus(status);
     setPage(1);
   };
@@ -192,7 +211,10 @@ export default function ServicesTab() {
           <div className="flex gap-2">
             <Button
               disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => {
+                setLoading(true);
+                setPage((p) => Math.max(1, p - 1));
+              }}
               variant="outline"
               className="h-8 px-3 rounded-lg border-slate-200 hover:bg-slate-50 cursor-pointer disabled:opacity-50"
             >
@@ -200,7 +222,10 @@ export default function ServicesTab() {
             </Button>
             <Button
               disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => {
+                setLoading(true);
+                setPage((p) => p + 1);
+              }}
               variant="outline"
               className="h-8 px-3 rounded-lg border-slate-200 hover:bg-slate-50 cursor-pointer disabled:opacity-50"
             >

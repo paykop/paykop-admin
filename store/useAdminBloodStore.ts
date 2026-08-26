@@ -10,6 +10,7 @@ import {
   fetchMatchingDonors,
 } from "../services/bloodService";
 import { ApiError } from "../services/apiService";
+import { getErrorMessage } from "../lib/errors";
 
 interface AdminBloodState {
   // Requests
@@ -96,12 +97,12 @@ export const useAdminBloodStore = create<AdminBloodState>((set, get) => ({
       const filter = status !== undefined ? status : get().statusFilter;
       const resp = await fetchBloodRequests(token || undefined, page, limit, filter);
       set({ requests: resp.requests || [], total: resp.total || 0, error: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 404) {
         set({ requests: [], total: 0, error: null });
       } else {
         console.error("[Store] Failed to fetch blood requests", err);
-        set({ error: err.message || "Failed to fetch blood requests" });
+        set({ error: getErrorMessage(err, "Failed to fetch blood requests") });
       }
     } finally {
       set({ loading: false });
@@ -118,9 +119,9 @@ export const useAdminBloodStore = create<AdminBloodState>((set, get) => ({
         error: null,
       }));
       return updated;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to update blood request status", err);
-      set({ error: err.message || "Failed to update blood request status" });
+      set({ error: getErrorMessage(err, "Failed to update blood request status") });
       throw err;
     } finally {
       set({ loading: false });
@@ -137,9 +138,9 @@ export const useAdminBloodStore = create<AdminBloodState>((set, get) => ({
         error: null,
       }));
       return updated;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to update blood request", err);
-      set({ error: err.message || "Failed to update blood request" });
+      set({ error: getErrorMessage(err, "Failed to update blood request") });
       throw err;
     } finally {
       set({ loading: false });
@@ -155,9 +156,9 @@ export const useAdminBloodStore = create<AdminBloodState>((set, get) => ({
         requests: state.requests.filter((r) => String(r.id) !== String(id)),
         error: null,
       }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to delete blood request", err);
-      set({ error: err.message || "Failed to delete blood request" });
+      set({ error: getErrorMessage(err, "Failed to delete blood request") });
       throw err;
     } finally {
       set({ loading: false });
@@ -170,9 +171,9 @@ export const useAdminBloodStore = create<AdminBloodState>((set, get) => ({
       const token = getToken ? await getToken() : undefined;
       const resp = await fetchStandingDonors(token || undefined, filters);
       set({ donors: resp.donors || [], donorsTotal: resp.total || (resp.donors || []).length, donorsError: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch donors directory", err);
-      set({ donorsError: err.message || "Failed to fetch donor directory" });
+      set({ donorsError: getErrorMessage(err, "Failed to fetch donor directory") });
     } finally {
       set({ donorsLoading: false });
     }
@@ -186,9 +187,9 @@ export const useAdminBloodStore = create<AdminBloodState>((set, get) => ({
       const list = resp.donors || [];
       set({ matchingDonors: list, matchingError: null });
       return list;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch matching donors", err);
-      set({ matchingError: err.message || "Failed to fetch matching donors", matchingDonors: [] });
+      set({ matchingError: getErrorMessage(err, "Failed to fetch matching donors"), matchingDonors: [] });
       return [];
     } finally {
       set({ matchingLoading: false });

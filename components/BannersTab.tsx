@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import { isAdmin } from "@/lib/rbac";
@@ -11,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Loader2, Plus, Edit, Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "./ui/toast";
 import { BannerItem } from "../schemas/bannerSchema";
+import { getErrorMessage } from "../lib/errors";
 
 const EMPTY = { title: "", image_url: "", type: "home", link_id: "", is_active: true };
 
@@ -82,8 +84,8 @@ export default function BannersTab() {
         toast.success("Banner created.");
       }
       setDialogOpen(false);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to save banner.");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to save banner."));
     } finally {
       setSaving(false);
     }
@@ -96,8 +98,8 @@ export default function BannersTab() {
     try {
       await deleteBanner(getToken, id);
       toast.success("Banner deleted.");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to delete banner.");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to delete banner."));
     } finally {
       setDeletingId(null);
     }
@@ -154,9 +156,12 @@ export default function BannersTab() {
                     <TableCell className="p-4 pl-6">
                       <div className="flex items-center gap-3">
                         {b.image_url ? (
-                          <img
+                          <Image
                             src={b.image_url}
                             alt={b.title || "Banner"}
+                            width={56}
+                            height={36}
+                            unoptimized
                             className="w-14 h-9 rounded-lg object-cover border border-slate-200 bg-slate-50"
                           />
                         ) : (

@@ -45,7 +45,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       }
 
       set({ notifications: list, unreadCount: unread, error: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn("[NotificationStore] Failed to fetch notifications", err);
       // Graceful fallback for un-deployed endpoint
       set({ notifications: [], unreadCount: 0 });

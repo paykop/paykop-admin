@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Button } from "./ui/button";
 import { Check, X, Package, Loader2, Trash2 } from "lucide-react";
 import { toast } from "./ui/toast";
+import { getErrorMessage } from "../lib/errors";
 
 const PRODUCT_STATUSES = ["pending", "approved", "rejected", "removed"] as const;
 
@@ -30,8 +31,8 @@ export default function ProductsTab() {
     try {
       await updateProductStatus(getToken, id, status);
       toast.success(`Product marked ${status}`);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to update product status");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to update product status"));
     } finally {
       setProcessingId(null);
     }
@@ -44,8 +45,8 @@ export default function ProductsTab() {
     try {
       await deleteProductAction(getToken, id);
       toast.success("Product deleted");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to delete product");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to delete product"));
     } finally {
       setProcessingId(null);
     }

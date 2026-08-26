@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { getErrorMessage } from "../lib/errors";
 import {
   AgentListItem,
   AgentDetailResponse,
@@ -53,9 +54,9 @@ export const useAdminAgentsStore = create<AdminAgentsState>((set, get) => ({
       if (!token) throw new Error("No token provided");
       const resp = await fetchAgents(token, 1, 50);
       set({ agents: resp.agents || [], error: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch agents", err);
-      set({ error: err.message || "Failed to fetch agents" });
+      set({ error: getErrorMessage(err, "Failed to fetch agents") });
     } finally {
       set({ loading: false });
     }
@@ -72,9 +73,9 @@ export const useAdminAgentsStore = create<AdminAgentsState>((set, get) => ({
         assignments: details.assignments || [],
         error: null,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch agent details", err);
-      set({ error: err.message || "Failed to fetch agent details" });
+      set({ error: getErrorMessage(err, "Failed to fetch agent details") });
     } finally {
       set({ detailsLoading: false });
     }
@@ -86,9 +87,9 @@ export const useAdminAgentsStore = create<AdminAgentsState>((set, get) => ({
       if (!token) return;
       const resp = await listAgentAssignments(token, id);
       set({ assignments: resp.assignments || [], error: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch agent assignments", err);
-      set({ error: err.message || "Failed to fetch assignments" });
+      set({ error: getErrorMessage(err, "Failed to fetch assignments") });
     }
   },
 

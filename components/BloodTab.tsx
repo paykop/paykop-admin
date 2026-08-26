@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "./ui/toast";
 import { BloodRequestItem } from "../schemas/bloodSchema";
+import { getErrorMessage } from "../lib/errors";
 
 export default function BloodTab() {
   const { getToken } = useAuth();
@@ -95,8 +96,8 @@ export default function BloodTab() {
     try {
       await updateAdminBloodRequestStatus(getToken, id, status);
       toast.success(`Blood request status updated to "${status}"!`);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to update blood request status.");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to update blood request status."));
     } finally {
       setProcessingId(null);
     }
@@ -109,8 +110,8 @@ export default function BloodTab() {
     try {
       await deleteAdminBloodRequest(getToken, id);
       toast.success("Blood request deleted.");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to delete blood request.");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to delete blood request."));
     } finally {
       setProcessingId(null);
     }
@@ -124,8 +125,8 @@ export default function BloodTab() {
       units_needed: String(r.units_needed ?? 1),
       hospital: r.hospital || "",
       contact_phone: r.contact_phone || "",
-      address: String((r as any).address || ""),
-      city_id: (r as any).city_id != null ? String((r as any).city_id) : "",
+      address: String(r.address || ""),
+      city_id: r.city_id != null ? String(r.city_id) : "",
       status: r.status || "pending",
     });
     setEditOpen(true);
@@ -150,8 +151,8 @@ export default function BloodTab() {
       toast.success("Blood request updated.");
       setEditOpen(false);
       setEditingId(null);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to update blood request.");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to update blood request."));
     } finally {
       setProcessingId(null);
     }

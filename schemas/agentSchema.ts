@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { userDetailsResponseSchema } from "./userSchema";
+import { baseUserDetailsResponseSchema } from "./userSchema";
 
 export const agentListItemSchema = z.object({
   id: z.string(),
@@ -32,11 +32,18 @@ export const agentAssignmentSummarySchema = z.object({
 
 export type AgentAssignmentSummary = z.infer<typeof agentAssignmentSummarySchema>;
 
-export const agentDetailResponseSchema = userDetailsResponseSchema.extend({
-  active_managed_sellers: z.number().optional().default(0),
-  trial_grants: z.number().optional().default(0),
-  assignments: z.array(agentAssignmentSummarySchema).optional().default([]),
-});
+export const agentDetailResponseSchema = baseUserDetailsResponseSchema
+  .extend({
+    active_managed_sellers: z.number().optional().default(0),
+    trial_grants: z.number().optional().default(0),
+    assignments: z.array(agentAssignmentSummarySchema).optional().default([]),
+  })
+  .transform((data) => ({
+    ...data,
+    auth_source: data.auth_source || data.auth_provider || "—",
+    auth_provider: data.auth_provider || data.auth_source || "—",
+    profile_picture_url: data.profile_picture_url || "",
+  }));
 
 export type AgentDetailResponse = z.infer<typeof agentDetailResponseSchema>;
 

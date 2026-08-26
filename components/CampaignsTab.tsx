@@ -9,8 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { HeartHandshake, Loader2, Trash2, Edit, Plus, Droplet } from "lucide-react";
-import { CreateCampaignRequest, UpdateCampaignRequest } from "../schemas/campaignSchema";
+import { CreateCampaignRequest, UpdateCampaignRequest, CampaignItem } from "../schemas/campaignSchema";
 import { toast } from "./ui/toast";
+import { getErrorMessage } from "../lib/errors";
 
 export default function CampaignsTab() {
   const { getToken } = useAuth();
@@ -20,7 +21,7 @@ export default function CampaignsTab() {
   const [processingId, setProcessingId] = useState<number | null>(null);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCampaign, setEditingCampaign] = useState<any>(null);
+  const [editingCampaign, setEditingCampaign] = useState<CampaignItem | null>(null);
   
   const [formData, setFormData] = useState({
     title: "",
@@ -50,7 +51,7 @@ export default function CampaignsTab() {
     setIsDialogOpen(true);
   };
 
-  const openEditDialog = (campaign: any) => {
+  const openEditDialog = (campaign: CampaignItem) => {
     if (!canManage) return;
     setEditingCampaign(campaign);
     setFormData({
@@ -87,8 +88,8 @@ export default function CampaignsTab() {
         toast.success("Campaign created successfully!");
       }
       setIsDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to save campaign");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to save campaign"));
     }
   };
 
@@ -98,8 +99,8 @@ export default function CampaignsTab() {
     try {
       await updateAdminCampaign(getToken, id, { status });
       toast.success(`Status updated to ${status}`);
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to update status");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to update status"));
     } finally {
       setProcessingId(null);
     }
@@ -112,8 +113,8 @@ export default function CampaignsTab() {
     try {
       await deleteAdminCampaign(getToken, id);
       toast.success("Campaign deleted");
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to delete campaign");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to delete campaign"));
     } finally {
       setProcessingId(null);
     }

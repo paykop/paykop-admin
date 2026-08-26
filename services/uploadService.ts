@@ -2,6 +2,7 @@
 import axios from "axios";
 import { z } from "zod";
 import { apiRequest } from "./apiService";
+import { getErrorMessage } from "../lib/errors";
 
 const PresignResponseSchema = z.object({
   upload_url: z.string().optional(),
@@ -61,8 +62,8 @@ export async function uploadImageFile(
     });
 
     return publicURL;
-  } catch (err: any) {
-    console.warn("[uploadService] Presigned upload unavailable, falling back to Data URL:", err?.message || err);
+  } catch (err: unknown) {
+    console.warn("[uploadService] Presigned upload unavailable, falling back to Data URL:", getErrorMessage(err, String(err)));
     // If backend storage credentials (R2/S3) are missing or presigned endpoint fails,
     // convert file to Data URL so category photo upload always works reliably!
     return await fileToDataURL(file);

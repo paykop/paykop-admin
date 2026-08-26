@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { getErrorMessage } from "../lib/errors";
 import {
   SupportListItem,
   SupportDetailResponse,
@@ -43,8 +44,8 @@ export const useAdminSupportStore = create<AdminSupportStore>((set, get) => ({
       if (!token) throw new Error("No token");
       const resp = await fetchSupportStaff(token);
       set({ support: resp.support || [], total: resp.total || 0 });
-    } catch (err: any) {
-      set({ error: err.message || "Failed to fetch support staff" });
+    } catch (err: unknown) {
+      set({ error: getErrorMessage(err, "Failed to fetch support staff") });
     } finally {
       set({ loading: false });
     }
@@ -57,8 +58,8 @@ export const useAdminSupportStore = create<AdminSupportStore>((set, get) => ({
       if (!token) throw new Error("No token");
       const detail = await fetchSupportDetail(token, id);
       set({ selected: detail });
-    } catch (err: any) {
-      set({ error: err.message || "Failed to fetch support detail" });
+    } catch (err: unknown) {
+      set({ error: getErrorMessage(err, "Failed to fetch support detail") });
     } finally {
       set({ detailsLoading: false });
     }

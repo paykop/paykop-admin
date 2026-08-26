@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import { isAdmin } from "@/lib/rbac";
@@ -13,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Loader2, Plus, Edit, Trash2, LayoutGrid, Star, Upload, Image as ImageIcon } from "lucide-react";
 import { toast } from "./ui/toast";
 import { uploadImageFile } from "../services/uploadService";
+import { getErrorMessage } from "../lib/errors";
 
 const EMPTY_FORM = {
   name: "",
@@ -104,9 +106,9 @@ export default function ServiceCategoriesTab() {
       const publicUrl = await uploadImageFile(token, file);
       setFormData((prev) => ({ ...prev, image_url: publicUrl }));
       toast.success("Photo uploaded successfully!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Image upload failed:", err);
-      toast.error(err?.message || "Failed to upload image photo.");
+      toast.error(getErrorMessage(err, "Failed to upload image photo."));
     } finally {
       setUploadingImage(false);
     }
@@ -136,8 +138,8 @@ export default function ServiceCategoriesTab() {
         toast.success("Service category created successfully!");
       }
       setIsDialogOpen(false);
-    } catch (err: any) {
-      const msg = err?.message || "";
+    } catch (err: unknown) {
+      const msg = getErrorMessage(err, "");
       if (msg.includes("duplicate key") || msg.includes("23505") || msg.includes("already exists")) {
         toast.error("A service category with this name already exists. Please choose a unique name.", "Duplicate Category");
       } else {
@@ -154,8 +156,8 @@ export default function ServiceCategoriesTab() {
     try {
       await deleteCategory(getToken, id);
       toast.success("Service category deleted successfully!");
-    } catch (err: any) {
-      const msg = err?.message || "";
+    } catch (err: unknown) {
+      const msg = getErrorMessage(err, "");
       if (msg.includes("in use") || msg.includes("cannot be modified or deleted")) {
         toast.error(
           "Cannot delete category because it has linked services or subcategories. Please reassign or delete dependent services/subcategories first.",
@@ -231,9 +233,12 @@ export default function ServiceCategoriesTab() {
                       <div className="flex items-center gap-3">
                         {/* Photo / Icon preview */}
                         {cat.image_url ? (
-                          <img
+                          <Image
                             src={cat.image_url}
                             alt={cat.name}
+                            width={36}
+                            height={36}
+                            unoptimized
                             className="w-9 h-9 rounded-lg object-cover border border-slate-200 shadow-sm shrink-0 bg-slate-50"
                           />
                         ) : (
@@ -408,9 +413,12 @@ export default function ServiceCategoriesTab() {
                 {/* Live Image Preview */}
                 {formData.image_url ? (
                   <div className="mt-1 flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
-                    <img
+                    <Image
                       src={formData.image_url}
                       alt="Category Preview"
+                      width={48}
+                      height={48}
+                      unoptimized
                       className="w-12 h-12 rounded-lg object-cover border border-slate-200 shadow-sm shrink-0 bg-white"
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = "none";

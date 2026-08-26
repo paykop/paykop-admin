@@ -85,10 +85,10 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
-  reject: (err: any) => void;
+  reject: (err: unknown) => void;
 }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -166,7 +166,7 @@ api.interceptors.response.use(
   }
 );
 
-export function postWithIdempotency<T = any>(url: string, data?: any, config?: AxiosRequestConfig) {
+export function postWithIdempotency<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) {
   let key: string;
   try {
     key = crypto.randomUUID();

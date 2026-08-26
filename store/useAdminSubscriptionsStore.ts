@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { getErrorMessage } from "../lib/errors";
 import {
   SubscriptionPlan,
   SubscriptionHistoryItem,
@@ -42,7 +43,7 @@ interface AdminSubscriptionsState {
   ) => Promise<void>;
 }
 
-export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set, get) => ({
+export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set) => ({
   plans: [],
   history: [],
   historyTotal: 0,
@@ -60,9 +61,9 @@ export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set, 
         error: null,
       }));
       return newPlan;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to create subscription plan", err);
-      set({ error: err.message || "Failed to create plan" });
+      set({ error: getErrorMessage(err, "Failed to create plan") });
       throw err;
     } finally {
       set({ loading: false });
@@ -80,9 +81,9 @@ export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set, 
         error: null,
       }));
       return updatedPlan;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to update subscription plan", err);
-      set({ error: err.message || "Failed to update plan" });
+      set({ error: getErrorMessage(err, "Failed to update plan") });
       throw err;
     } finally {
       set({ loading: false });
@@ -100,9 +101,9 @@ export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set, 
         plans: state.plans.filter((p) => p.id !== numericId),
         error: null,
       }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to delete subscription plan", err);
-      set({ error: err.message || "Failed to delete plan" });
+      set({ error: getErrorMessage(err, "Failed to delete plan") });
       throw err;
     } finally {
       set({ loading: false });
@@ -120,9 +121,9 @@ export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set, 
         historyTotal: resp.total || 0,
         error: null,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch subscription history", err);
-      set({ error: err.message || "Failed to fetch subscription history" });
+      set({ error: getErrorMessage(err, "Failed to fetch subscription history") });
     } finally {
       set({ loading: false });
     }

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { BannerItem, CreateBannerRequest, UpdateBannerRequest } from "../schemas/bannerSchema";
+import { getErrorMessage } from "../lib/errors";
 import {
   fetchAdminBanners,
   createAdminBanner,
@@ -33,9 +34,9 @@ export const useAdminBannersStore = create<AdminBannersStore>((set, get) => ({
       if (!token) throw new Error("No token");
       const resp = await fetchAdminBanners(token);
       set({ banners: resp.banners || [] });
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Backend may return a bare array; apiRequest/schema handles object — soft-fail empty
-      set({ error: err.message || "Failed to fetch banners", banners: [] });
+      set({ error: getErrorMessage(err, "Failed to fetch banners"), banners: [] });
     } finally {
       set({ loading: false });
     }

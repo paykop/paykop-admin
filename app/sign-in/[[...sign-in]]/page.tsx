@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Shield,
   Mail,
   ArrowRight,
   Loader2,
@@ -18,6 +17,9 @@ import { useUserStore } from "@/store/useUserStore";
 import { getAccessToken, clearTokens } from "@/lib/api/client";
 import { toast } from "@/components/ui/toast";
 import { isStaff } from "@/lib/rbac";
+import { getErrorMessage } from "@/lib/errors";
+
+const emptySubscribe = () => () => {};
 
 export default function SignInPage() {
   const router = useRouter();
@@ -29,13 +31,9 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendCountdown, setResendCountdown] = useState(0);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Check if already logged in — skip re-fetch when store already has a staff user
   useEffect(() => {
@@ -87,10 +85,10 @@ export default function SignInPage() {
       setTimeout(() => {
         otpInputsRef.current[0]?.focus();
       }, 100);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to request OTP:", err);
       // For anti-enumeration, backend typically succeeds, but if an actual network error occurs:
-      setError(err?.message || "Failed to send OTP. Please try again.");
+      setError(getErrorMessage(err, "Failed to send OTP. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -157,9 +155,9 @@ export default function SignInPage() {
 
       toast.success("Welcome back!");
       router.push("/");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("OTP verification failed:", err);
-      setError(err?.message || "Invalid or expired security code. Please try again.");
+      setError(getErrorMessage(err, "Invalid or expired security code. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -176,8 +174,8 @@ export default function SignInPage() {
       setResendCountdown(60);
       setOtp(["", "", "", "", "", ""]);
       otpInputsRef.current[0]?.focus();
-    } catch (err: any) {
-      setError(err?.message || "Failed to resend code.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to resend code."));
     } finally {
       setLoading(false);
     }

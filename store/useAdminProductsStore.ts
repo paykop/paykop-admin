@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { AdminProductListItem as ProductListItem } from "../schemas/productSchema";
 import { fetchAdminProducts, updateAdminProductStatus, deleteAdminProduct } from "../services/productService";
+import { getErrorMessage } from "../lib/errors";
 
 interface AdminProductsStore {
   products: ProductListItem[];
@@ -25,9 +26,9 @@ export const useAdminProductsStore = create<AdminProductsStore>((set, get) => ({
       if (!token) throw new Error("No token provided");
       const resp = await fetchAdminProducts(token, 1, 50, status);
       set({ products: resp.products || [], error: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to fetch products", err);
-      set({ error: err.message || "Failed to fetch products" });
+      set({ error: getErrorMessage(err, "Failed to fetch products") });
     } finally {
       set({ loading: false });
     }
@@ -38,9 +39,9 @@ export const useAdminProductsStore = create<AdminProductsStore>((set, get) => ({
       if (!token) throw new Error("No token provided");
       await updateAdminProductStatus(token, id, status);
       await get().fetchProducts(getToken, get().lastStatus);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to update product status", err);
-      set({ error: err.message || "Failed to update product status" });
+      set({ error: getErrorMessage(err, "Failed to update product status") });
       throw err;
     }
   },
@@ -50,9 +51,9 @@ export const useAdminProductsStore = create<AdminProductsStore>((set, get) => ({
       if (!token) throw new Error("No token provided");
       await deleteAdminProduct(token, id);
       await get().fetchProducts(getToken, get().lastStatus);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to delete product", err);
-      set({ error: err.message || "Failed to delete product" });
+      set({ error: getErrorMessage(err, "Failed to delete product") });
       throw err;
     }
   },

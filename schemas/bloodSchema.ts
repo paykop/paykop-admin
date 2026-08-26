@@ -9,6 +9,8 @@ export const bloodRequestItemSchema = z.object({
   units_needed: z.number().optional().default(1),
   hospital: z.string().optional().default("Not specified"),
   contact_phone: z.string().optional().default("N/A"),
+  address: z.string().optional().nullable(),
+  city_id: z.union([z.number(), z.string()]).optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
   status: z.string().optional().default("pending"),

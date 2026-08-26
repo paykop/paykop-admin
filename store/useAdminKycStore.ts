@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { KycSubmission } from "../schemas/kycSchema";
+import { getErrorMessage } from "../lib/errors";
 import {
   fetchKycSubmissions,
   fetchKycSubmission,
@@ -51,8 +52,8 @@ export const useAdminKycStore = create<AdminKycStore>((set, get) => ({
       const filter = status !== undefined ? status : get().statusFilter;
       const resp = await fetchKycSubmissions(token, page, limit, filter);
       set({ submissions: resp.submissions || [], total: resp.total || 0 });
-    } catch (err: any) {
-      set({ error: err.message || "Failed to fetch KYC submissions", submissions: [] });
+    } catch (err: unknown) {
+      set({ error: getErrorMessage(err, "Failed to fetch KYC submissions"), submissions: [] });
     } finally {
       set({ loading: false });
     }
@@ -65,8 +66,8 @@ export const useAdminKycStore = create<AdminKycStore>((set, get) => ({
       if (!token) throw new Error("No token");
       const detail = await fetchKycSubmission(token, id);
       set({ selected: detail });
-    } catch (err: any) {
-      set({ error: err.message || "Failed to fetch KYC detail" });
+    } catch (err: unknown) {
+      set({ error: getErrorMessage(err, "Failed to fetch KYC detail") });
     } finally {
       set({ detailsLoading: false });
     }

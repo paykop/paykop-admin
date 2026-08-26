@@ -8,6 +8,8 @@ import {
 } from "../services/userService";
 import { getAccessToken, clearTokens } from "../lib/api/client";
 import { isStaff } from "../lib/rbac";
+import { getErrorMessage } from "../lib/errors";
+import { ApiError } from "../services/apiService";
 
 interface UserState {
   backendUser: BackendUser | null;
@@ -48,12 +50,11 @@ export const useUserStore = create<UserState>((set, get) => ({
         let response: BackendUser;
         try {
           response = await fetchUserProfile(token);
-        } catch (err: any) {
+        } catch (err: unknown) {
           const isUserNotFound =
-            err?.status === 401 ||
-            err?.status === 404 ||
-            err?.status === 400 ||
-            (err?.message && String(err.message).toLowerCase().includes("user not found"));
+            (err instanceof ApiError &&
+              (err.status === 401 || err.status === 404 || err.status === 400)) ||
+            getErrorMessage(err).toLowerCase().includes("user not found");
 
           if (isUserNotFound) {
             const syncRes = await syncUser(token);
@@ -85,20 +86,20 @@ export const useUserStore = create<UserState>((set, get) => ({
           try {
             const perms = await fetchUserPermissions(token);
             set({ permissions: perms });
-          } catch (permsErr: any) {
-            if (permsErr?.status !== 429) {
+          } catch (permsErr: unknown) {
+            if (!(permsErr instanceof ApiError && permsErr.status === 429)) {
               console.error("Failed to fetch user permissions in background:", permsErr);
             }
           }
         }
 
         return response;
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to fetch backend profile:", err);
         const errorMsg =
-          err?.status === 401
+          err instanceof ApiError && err.status === 401
             ? "Access Denied: This administrator account does not exist in the database."
-            : err?.message || "Could not connect to backend.";
+            : getErrorMessage(err, "Could not connect to backend.");
         set({ backendUser: null, permissions: null, error: errorMsg });
         return null;
       } finally {
@@ -119,8 +120,8 @@ export const useUserStore = create<UserState>((set, get) => ({
       if (!token) return;
       const response = await fetchUserPermissions(token);
       set({ permissions: response });
-    } catch (err: any) {
-      if (err?.status !== 429) {
+    } catch (err: unknown) {
+      if (!(err instanceof ApiError && err.status === 429)) {
         console.error("Failed to fetch permissions:", err);
       }
     } finally {

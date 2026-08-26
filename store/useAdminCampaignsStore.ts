@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { CampaignItem, CreateCampaignRequest, UpdateCampaignRequest } from "../schemas/campaignSchema";
 import { fetchCampaigns, createCampaign, updateCampaign, deleteCampaign } from "../services/campaignService";
+import { getErrorMessage } from "../lib/errors";
 
 interface AdminCampaignsState {
   campaigns: CampaignItem[];
@@ -31,7 +32,7 @@ interface AdminCampaignsState {
   ) => Promise<void>;
 }
 
-export const useAdminCampaignsStore = create<AdminCampaignsState>((set, get) => ({
+export const useAdminCampaignsStore = create<AdminCampaignsState>((set) => ({
   campaigns: [],
   total: 0,
   loading: false,
@@ -45,9 +46,9 @@ export const useAdminCampaignsStore = create<AdminCampaignsState>((set, get) => 
       console.log(`[Store] Fetching campaigns page ${page}`);
       const resp = await fetchCampaigns(token, page, limit);
       set({ campaigns: resp.campaigns || [], total: resp.total || 0, error: null });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to fetch campaigns", err);
-      set({ error: err.message || "Failed to fetch campaigns" });
+      set({ error: getErrorMessage(err, "Failed to fetch campaigns") });
     } finally {
       set({ loading: false });
     }
@@ -65,9 +66,9 @@ export const useAdminCampaignsStore = create<AdminCampaignsState>((set, get) => 
         error: null,
       }));
       return campaign;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to create campaign", err);
-      set({ error: err.message || "Failed to create campaign" });
+      set({ error: getErrorMessage(err, "Failed to create campaign") });
       throw err;
     } finally {
       set({ loading: false });
@@ -85,9 +86,9 @@ export const useAdminCampaignsStore = create<AdminCampaignsState>((set, get) => 
         error: null,
       }));
       return campaign;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to update campaign", err);
-      set({ error: err.message || "Failed to update campaign" });
+      set({ error: getErrorMessage(err, "Failed to update campaign") });
       throw err;
     } finally {
       set({ loading: false });
@@ -106,9 +107,9 @@ export const useAdminCampaignsStore = create<AdminCampaignsState>((set, get) => 
         total: Math.max(0, state.total - 1),
         error: null,
       }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Store] Failed to delete campaign", err);
-      set({ error: err.message || "Failed to delete campaign" });
+      set({ error: getErrorMessage(err, "Failed to delete campaign") });
       throw err;
     } finally {
       set({ loading: false });

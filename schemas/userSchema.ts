@@ -84,7 +84,7 @@ export const activeAssignmentSummarySchema = z.object({
 
 export type ActiveAssignmentSummary = z.infer<typeof activeAssignmentSummarySchema>;
 
-export const userDetailsResponseSchema = z
+export const baseUserDetailsResponseSchema = z
   .object({
     id: z.string(),
     email: z.string().nullable().optional(),
@@ -114,13 +114,14 @@ export const userDetailsResponseSchema = z
     onboarded_at: z.string().nullable().optional(),
     active_assignment: activeAssignmentSummarySchema.nullable().optional(),
   })
-  .passthrough()
-  .transform((data) => ({
-    ...data,
-    auth_source: data.auth_source || data.auth_provider || "—",
-    auth_provider: data.auth_provider || data.auth_source || "—",
-    profile_picture_url: data.profile_picture_url || "",
-  }));
+  .passthrough();
+
+export const userDetailsResponseSchema = baseUserDetailsResponseSchema.transform((data) => ({
+  ...data,
+  auth_source: data.auth_source || data.auth_provider || "—",
+  auth_provider: data.auth_provider || data.auth_source || "—",
+  profile_picture_url: data.profile_picture_url || "",
+}));
 
 export type UserDetailsResponse = z.infer<typeof userDetailsResponseSchema>;
 

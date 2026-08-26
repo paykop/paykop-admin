@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Loader2, Eye, Check, X, ShieldCheck, FileText, ExternalLink } from "lucide-react";
 import { toast } from "./ui/toast";
 import { safeExternalUrl } from "@/lib/safeExternalUrl";
+import { getErrorMessage } from "../lib/errors";
 
 const STATUS_FILTERS = ["all", "pending", "verified", "rejected", "draft"] as const;
 
@@ -53,8 +54,8 @@ export default function KycTab() {
       toast.success("KYC submission approved.");
       setViewOpen(false);
       clearSelected();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to approve KYC.");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to approve KYC."));
     } finally {
       setProcessingId(null);
     }
@@ -76,8 +77,8 @@ export default function KycTab() {
       setRejectOpen(false);
       setViewOpen(false);
       clearSelected();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to reject KYC.");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to reject KYC."));
     } finally {
       setProcessingId(null);
     }
