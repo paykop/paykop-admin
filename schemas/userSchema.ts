@@ -59,6 +59,7 @@ export const userListItemSchema = z.object({
   last_name: z.string(),
   role: z.string(),
   is_onboarded: z.boolean(),
+  is_cod_enabled: z.boolean().optional().default(false),
   kyc_status: z.string().optional(),
   is_suspended: z.boolean().optional(),
   // Gamification fields (July 2026)
@@ -75,29 +76,51 @@ export const userListResponseSchema = z.object({
 export type UserListItem = z.infer<typeof userListItemSchema>;
 export type UserListResponse = z.infer<typeof userListResponseSchema>;
 
-export const userDetailsResponseSchema = z.object({
-  id: z.string(),
-  email: z.string().nullable().optional(),
-  phone: z.string().nullable().optional(),
-  first_name: z.string(),
-  last_name: z.string(),
-  address: z.string().nullable().optional(),
-  role: z.string(),
-  is_onboarded: z.boolean(),
-  has_subscription: z.boolean(),
-  auth_source: z.string(),
-  kyc_status: z.string(),
-  profile_picture_url: z.string(),
-  bio: z.string().nullable().optional(),
-  social_links: z.string().nullable().optional(),
-  is_suspended: z.boolean(),
-  created_at: z.string(),
-  updated_at: z.string(),
-  // Gamification fields (July 2026)
-  community_score: z.number().optional().default(0),
-  reward_points: z.number().optional().default(0),
-  badge: z.string().nullable().optional(),
+export const activeAssignmentSummarySchema = z.object({
+  assignment_id: z.number(),
+  agent_id: z.string(),
+  status: z.string(),
 });
+
+export type ActiveAssignmentSummary = z.infer<typeof activeAssignmentSummarySchema>;
+
+export const userDetailsResponseSchema = z
+  .object({
+    id: z.string(),
+    email: z.string().nullable().optional(),
+    phone: z.string().nullable().optional(),
+    first_name: z.string(),
+    last_name: z.string(),
+    address: z.string().nullable().optional(),
+    role: z.string(),
+    is_onboarded: z.boolean(),
+    is_cod_enabled: z.boolean().optional().default(false),
+    has_subscription: z.boolean(),
+    auth_source: z.string().optional(),
+    auth_provider: z.string().optional(),
+    kyc_status: z.string(),
+    profile_picture_url: z.string().nullable().optional().default(""),
+    bio: z.string().nullable().optional(),
+    social_links: z.string().nullable().optional(),
+    is_suspended: z.boolean(),
+    created_at: z.string(),
+    updated_at: z.string(),
+    community_score: z.number().optional().default(0),
+    reward_points: z.number().optional().default(0),
+    badge: z.string().nullable().optional(),
+    created_by_agent_id: z.string().nullable().optional(),
+    onboarding_source: z.string().optional(),
+    onboarded_by_agent_id: z.string().nullable().optional(),
+    onboarded_at: z.string().nullable().optional(),
+    active_assignment: activeAssignmentSummarySchema.nullable().optional(),
+  })
+  .passthrough()
+  .transform((data) => ({
+    ...data,
+    auth_source: data.auth_source || data.auth_provider || "—",
+    auth_provider: data.auth_provider || data.auth_source || "—",
+    profile_picture_url: data.profile_picture_url || "",
+  }));
 
 export type UserDetailsResponse = z.infer<typeof userDetailsResponseSchema>;
 

@@ -1,30 +1,41 @@
 // src/components/OverviewTab.tsx
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/useAuth";
 import { useDashboardStore } from "../store/useDashboardStore";
+import { fetchAdminMetrics } from "../services/dashboardService";
+import { AdminMetrics } from "../schemas/dashboardSchema";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 import { Button } from "./ui/button";
-import { Users, TrendingUp, Heart, CreditCard, ArrowRight, Loader2 } from "lucide-react";
+import { Users, TrendingUp, Heart, CreditCard, ArrowRight, Loader2, Activity } from "lucide-react";
 
 export default function OverviewTab() {
   const router = useRouter();
   const { getToken } = useAuth();
 
   const { data, loading, fetchDashboard } = useDashboardStore();
+  const [metricsData, setMetricsData] = useState<AdminMetrics | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
 
   useEffect(() => {
     fetchDashboard(getToken);
+    (async () => {
+      try {
+        setMetricsLoading(true);
+        const token = await getToken();
+        if (!token) return;
+        const m = await fetchAdminMetrics(token);
+        setMetricsData(m);
+      } catch (err) {
+        console.error("Failed to fetch admin metrics:", err);
+        setMetricsData(null);
+      } finally {
+        setMetricsLoading(false);
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getToken]);
 
@@ -40,6 +51,7 @@ export default function OverviewTab() {
     total_users: 0,
     buyers: 0,
     sellers: 0,
+    agents: 0,
     admins: 0,
     pending_products: 0,
     approved_products: 0,
@@ -47,8 +59,17 @@ export default function OverviewTab() {
   };
 
   const pendingApprovalsCount = counts.pending_products;
+  const productTotal =
+    counts.approved_products + counts.pending_products + counts.rejected_products;
+  const pct = (n: number) => (productTotal > 0 ? Math.round((n / productTotal) * 100) : 0);
 
-  const metrics = [
+  const productMix = [
+    { name: "Approved", count: counts.approved_products, percentage: pct(counts.approved_products), color: "bg-emerald-600" },
+    { name: "Pending", count: counts.pending_products, percentage: pct(counts.pending_products), color: "bg-amber-500" },
+    { name: "Rejected", count: counts.rejected_products, percentage: pct(counts.rejected_products), color: "bg-rose-500" },
+  ];
+
+  const metricCards = [
     {
       label: "Total users",
       value: counts.total_users.toLocaleString(),
@@ -66,16 +87,16 @@ export default function OverviewTab() {
       changeColor: "text-amber-500",
     },
     {
-      label: "Admins",
-      value: counts.admins.toLocaleString(),
-      change: "Active team members",
+      label: "Agents",
+      value: (counts.agents ?? 0).toLocaleString(),
+      change: `Admins: ${counts.admins}`,
       icon: Heart,
       iconColor: "text-rose-500 bg-rose-500/10",
       changeColor: "text-slate-500",
     },
     {
       label: "Total Products",
-      value: (counts.approved_products + counts.pending_products + counts.rejected_products).toLocaleString(),
+      value: productTotal.toLocaleString(),
       change: `Rejected: ${counts.rejected_products}`,
       icon: CreditCard,
       iconColor: "text-indigo-500 bg-indigo-500/10",
@@ -83,44 +104,17 @@ export default function OverviewTab() {
     },
   ];
 
-  const modules = [
-    { name: "Products", percentage: 42, color: "bg-blue-600" },
-    { name: "Services", percentage: 31, color: "bg-indigo-600" },
-    { name: "Donations", percentage: 19, color: "bg-emerald-600" },
-    { name: "Subscriptions", percentage: 8, color: "bg-amber-600" },
-  ];
-
-  const chartBars = [
-    { label: "W1", height: "h-[35%]", active: false },
-    { label: "W2", height: "h-[60%]", active: false },
-    { label: "W3", height: "h-[50%]", active: false },
-    { label: "W4", height: "h-[90%]", active: true },
-    { label: "W5", height: "h-[75%]", active: false },
-  ];
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Overview</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Platform health · Live Data</p>
-        </div>
-        <div>
-          <Select defaultValue="all-time">
-            <SelectTrigger className="w-[120px] bg-white border border-slate-200 text-slate-700 font-semibold text-xs rounded-lg shadow-sm">
-              <SelectValue placeholder="Select date" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all-time" className="text-xs">All Time</SelectItem>
-            </SelectContent>
-          </Select>
+          <p className="text-sm text-slate-500 mt-0.5">Platform counts · Live</p>
         </div>
       </div>
 
-      {/* Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((m, i) => {
+        {metricCards.map((m, i) => {
           const Icon = m.icon;
           return (
             <Card key={i} className="bg-white border border-slate-200 rounded-2xl shadow-sm">
@@ -141,60 +135,79 @@ export default function OverviewTab() {
         })}
       </div>
 
-      {/* Chart & Breakdowns */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Transactions volume */}
-        <Card className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col justify-between min-h-[300px]">
+        <Card className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col min-h-[240px]">
           <CardHeader className="p-5 pb-0 flex flex-row items-center justify-between">
-            <CardTitle className="font-bold text-slate-800 text-sm">Activity volume</CardTitle>
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Weekly</span>
+            <CardTitle className="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <Activity className="w-4 h-4 text-blue-600" />
+              System diagnostics
+            </CardTitle>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Live metrics</span>
           </CardHeader>
-          <CardContent className="p-5 pt-4 flex-1 flex flex-col justify-end">
-            <div className="flex-1 flex items-end justify-around h-44 pb-2 border-b border-slate-100">
-              {chartBars.map((bar, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-2 w-12 h-full justify-end">
-                  <div
-                    className={`w-full rounded-md transition-all duration-300 ${bar.height} ${bar.active ? "bg-blue-600 shadow-md shadow-blue-500/20" : "bg-indigo-100 hover:bg-indigo-200"
-                      }`}
-                  />
-                  <span className={`text-[10px] font-bold ${bar.active ? "text-blue-600 font-extrabold" : "text-slate-400"}`}>
-                    {bar.label}
-                  </span>
+          <CardContent className="p-5 pt-4">
+            {metricsLoading && !metricsData ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+              </div>
+            ) : !metricsData ? (
+              <p className="text-sm text-slate-400 py-8 text-center">Diagnostics unavailable.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                  <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Uptime</p>
+                  <p className="text-lg font-bold text-slate-900 mt-1">{metricsData.uptime_human || "—"}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{metricsData.uptime_seconds?.toLocaleString() ?? 0}s</p>
                 </div>
-              ))}
-            </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                  <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Geocode cache</p>
+                  <p className="text-lg font-bold text-slate-900 mt-1">{metricsData.geocode_cache_hit_rate || "—"}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {metricsData.geocode_cache_hit_count}/{metricsData.geocode_call_count} hits
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4 col-span-2 sm:col-span-1">
+                  <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Clerk errors</p>
+                  <p className="text-lg font-bold text-slate-900 mt-1">{metricsData.clerk_error_count ?? 0}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Auth provider faults</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* By module */}
         <Card className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col justify-between">
           <CardHeader className="p-5 pb-0">
-            <CardTitle className="font-bold text-slate-800 text-sm">By module</CardTitle>
+            <CardTitle className="font-bold text-slate-800 text-sm">Product review mix</CardTitle>
           </CardHeader>
           <CardContent className="p-5 pt-4">
-            <div className="space-y-4">
-              {modules.map((mod, i) => (
-                <div key={i} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-bold">
-                    <span className="text-slate-500">{mod.name}</span>
-                    <span className="text-slate-800">{mod.percentage}%</span>
+            {productTotal === 0 ? (
+              <p className="text-sm text-slate-400 py-6 text-center">No products yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {productMix.map((mod) => (
+                  <div key={mod.name} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-slate-500">{mod.name}</span>
+                      <span className="text-slate-800">
+                        {mod.count} · {mod.percentage}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                      <div className={`${mod.color} h-full rounded-full`} style={{ width: `${mod.percentage}%` }} />
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                    <div className={`${mod.color} h-full rounded-full`} style={{ width: `${mod.percentage}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Pending alerts banner */}
       {pendingApprovalsCount > 0 && (
         <Alert className="bg-amber-500/10 border border-amber-500/25 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center font-bold text-amber-600 text-xs shrink-0">
-              ⚠️
+              !
             </div>
             <div>
               <AlertTitle className="text-sm font-semibold text-amber-800 mb-0.5">Pending product approvals</AlertTitle>
@@ -204,7 +217,7 @@ export default function OverviewTab() {
             </div>
           </div>
           <Button
-            onClick={() => router.push("/approvals")}
+            onClick={() => router.push("/products")}
             className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm shadow-blue-500/10 cursor-pointer h-9 shrink-0"
           >
             <span>Open queue</span>

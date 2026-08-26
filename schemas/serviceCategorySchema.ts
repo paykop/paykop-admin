@@ -1,43 +1,50 @@
 // src/schemas/serviceCategorySchema.ts
 import { z } from "zod";
 
-export const serviceCategoryItemSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  type: z.string(),
-  parent_id: z.number().nullable().optional(),
-  icon: z.string().nullable().optional(),
-  subtitle: z.string().nullable().optional(),
-  icon_color: z.string().nullable().optional(),
-  bg_color: z.string().nullable().optional(),
-  is_featured: z.boolean().optional().default(false),
-});
+export const serviceCategoryItemSchema: z.ZodType<any> = z.lazy(() =>
+  z.object({
+    id: z.number(),
+    name: z.string(),
+    type: z.string(),
+    parent_id: z.number().nullable().optional(),
+    icon: z.string().nullable().optional(),
+    subtitle: z.string().nullable().optional(),
+    icon_color: z.string().nullable().optional(),
+    bg_color: z.string().nullable().optional(),
+    is_featured: z.boolean().optional().default(false),
+    image_url: z.string().nullable().optional(),
+    children: z.array(z.lazy(() => serviceCategoryItemSchema)).optional().default([]),
+  })
+);
 
-export const serviceCategoryListResponseSchema = z.object({
-  categories: z.array(serviceCategoryItemSchema),
-  total: z.number().optional(),
-});
+export const serviceCategoryListResponseSchema = z
+  .array(serviceCategoryItemSchema)
+  .nullable()
+  .optional()
+  .transform((val) => val ?? []);
 
 export const createServiceCategoryRequestSchema = z.object({
   name: z.string().max(100),
   type: z.string().max(50),
-  parent_id: z.number().optional(),
+  parent_id: z.number().nullable().optional(),
   icon: z.string().optional(),
   subtitle: z.string().optional(),
   icon_color: z.string().optional(),
   bg_color: z.string().optional(),
   is_featured: z.boolean().optional(),
+  image_url: z.string().nullable().optional(),
 });
 
 export const updateServiceCategoryRequestSchema = z.object({
   name: z.string().max(100).optional(),
   type: z.string().max(50).optional(),
-  parent_id: z.number().optional(),
+  parent_id: z.number().nullable().optional(),
   icon: z.string().optional(),
   subtitle: z.string().optional(),
   icon_color: z.string().optional(),
   bg_color: z.string().optional(),
   is_featured: z.boolean().optional(),
+  image_url: z.string().nullable().optional(),
 });
 
 export const serviceCategoryActionResponseSchema = z.object({

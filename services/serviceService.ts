@@ -1,3 +1,4 @@
+// src/services/serviceService.ts
 import { apiRequest } from "./apiService";
 import {
   serviceListResponseSchema,
@@ -10,42 +11,42 @@ import {
  * Fetch all provider services (Admin, paginated, with optional status filter)
  */
 export async function fetchAdminServices(
-  token: string,
+  token?: string,
   page = 1,
   limit = 10,
   status?: string
 ): Promise<ServiceListResponse> {
-  console.log(`[API] Fetching services Page: ${page}, Limit: ${limit}, Status: ${status}`);
   const params: Record<string, string> = {
     page: page.toString(),
     limit: limit.toString(),
   };
-  if (status) {
+  if (status && status !== "all") {
     params.status = status;
   }
 
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   return apiRequest("/api/v1/admin/services", serviceListResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     params,
   });
 }
 
 /**
- * Update/moderate provider service status (Admin)
+ * Update/moderate provider service status (Admin) - approved, rejected, suspended, etc.
  */
 export async function updateAdminServiceStatus(
-  token: string,
-  id: number,
+  token: string | undefined,
+  id: number | string,
   status: string
 ): Promise<ServiceStatusResponse> {
-  console.log(`[API] Updating service ID: ${id} status to: ${status}`);
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   return apiRequest(`/api/v1/admin/services/${id}/status`, serviceStatusResponseSchema, {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     body: JSON.stringify({ status }),
   });
 }

@@ -6,11 +6,13 @@ import {
   subscriptionPlanSchema,
   subscriptionPlanActionResponseSchema,
   subscriptionHistoryResponseSchema,
+  reconciliationListResponseSchema,
   CreateSubscriptionPlanRequest,
   UpdateSubscriptionPlanRequest,
   SubscriptionPlan,
   SubscriptionPlanActionResponse,
   SubscriptionHistoryResponse,
+  ReconciliationListResponse,
 } from "../schemas/subscriptionSchema";
 
 /**
@@ -116,12 +118,51 @@ export async function fetchSubscriptionHistory(
  * Fetch all registered subscription plans (Admin)
  */
 export async function fetchSubscriptionPlans(token: string): Promise<SubscriptionPlan[]> {
-  console.log(`[API] Fetching all subscription plans`);
   return apiRequest("/api/v1/admin/subscriptions/plans", z.array(subscriptionPlanSchema), {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
+}
+
+/**
+ * Fetch unresolved subscription reconciliation queue (Admin)
+ */
+export async function fetchSubscriptionReconciliations(
+  token: string,
+  page = 1,
+  limit = 20
+): Promise<ReconciliationListResponse> {
+  return apiRequest("/api/v1/admin/subscriptions/reconciliation", reconciliationListResponseSchema, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    params: {
+      page: page.toString(),
+      limit: limit.toString(),
+    },
+  });
+}
+
+/**
+ * Resolve a reconciliation item by mapping to a local plan (Admin)
+ */
+export async function resolveSubscriptionReconciliation(
+  token: string,
+  id: number,
+  planId: number
+): Promise<SubscriptionPlanActionResponse> {
+  return apiRequest(
+    `/api/v1/admin/subscriptions/reconciliation/${id}/resolve`,
+    subscriptionPlanActionResponseSchema,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ plan_id: planId }),
+    }
+  );
 }
 
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import {
   Loader2,
@@ -15,8 +15,7 @@ import {
 } from "lucide-react";
 
 export default function BackendProfile() {
-  const { isLoaded, userId, getToken } = useAuth();
-  const { user: clerkUser } = useUser();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const {
     backendUser,
     permissions,
@@ -30,10 +29,10 @@ export default function BackendProfile() {
   };
 
   useEffect(() => {
-    if (isLoaded && userId) {
+    if (isLoaded && isSignedIn) {
       fetchProfile(getToken);
     }
-  }, [isLoaded, userId]);
+  }, [isLoaded, isSignedIn, fetchProfile, getToken]);
 
   if (!isLoaded) {
     return (
@@ -45,11 +44,12 @@ export default function BackendProfile() {
 
   const roleColors: Record<string, string> = {
     admin: "bg-rose-500/10 border-rose-500/30 text-rose-400",
+    support: "bg-sky-500/10 border-sky-500/30 text-sky-400",
     seller: "bg-amber-500/10 border-amber-500/30 text-amber-400",
     buyer: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
   };
 
-  const isAdmin = backendUser?.role === "admin";
+  const isStaffUser = backendUser?.role === "admin" || backendUser?.role === "support";
 
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl shadow-2xl text-slate-100 flex flex-col justify-between">
@@ -60,8 +60,8 @@ export default function BackendProfile() {
               <Database className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Go Backend Connection</h2>
-              <p className="text-xs text-slate-400">Verifying Clerk & DB Mirroring</p>
+              <h2 className="text-lg font-bold text-white tracking-tight">Backend Connection</h2>
+              <p className="text-xs text-slate-400">Direct Native JWT Session</p>
             </div>
           </div>
           <button
@@ -79,7 +79,7 @@ export default function BackendProfile() {
           {loading && !backendUser ? (
             <div className="flex flex-col items-center justify-center py-10 gap-3">
               <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-              <p className="text-xs text-slate-400">Querying Go server at port 8080...</p>
+              <p className="text-xs text-slate-400">Verifying session...</p>
             </div>
           ) : error ? (
             <div className="p-4 rounded-xl bg-red-950/20 border border-red-900/40 text-red-200 text-sm flex gap-3">
@@ -101,20 +101,20 @@ export default function BackendProfile() {
               <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-950/10 border border-emerald-900/20 text-emerald-400 text-xs">
                 <span className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  Authenticated Handshake OK
+                  Authenticated Session OK
                 </span>
                 <span className="font-mono text-slate-500">HTTP 200</span>
               </div>
 
-              {/* Non-Admin Warning Banner */}
-              {!isAdmin && (
+              {/* Non-staff Warning Banner */}
+              {!isStaffUser && (
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs flex gap-2.5 leading-normal">
                   <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-bold">Admin Privileges Required</p>
+                    <p className="font-bold">Staff Privileges Required</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      Your database role is <span className="text-amber-300 font-semibold">{backendUser.role}</span>. 
-                      You must sign in with an email matching the backend's <code className="bg-slate-950 px-1 py-0.5 rounded font-mono text-amber-300 text-[10px]">ADMIN_EMAIL</code> env var to test admin APIs.
+                      Your database role is <span className="text-amber-300 font-semibold">{backendUser.role}</span>.
+                      You must sign in with an admin or support staff account.
                     </p>
                   </div>
                 </div>
@@ -123,11 +123,11 @@ export default function BackendProfile() {
               {/* User Identity Details */}
               <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-900 space-y-3.5">
                 <div className="flex items-center gap-3 pb-3 border-b border-slate-900">
-                  {backendUser.profile_picture_url || clerkUser?.imageUrl ? (
+                  {backendUser.profile_picture_url ? (
                     <img
-                      src={backendUser.profile_picture_url || clerkUser?.imageUrl}
+                      src={backendUser.profile_picture_url}
                       alt="Avatar"
-                      className="w-10 h-10 rounded-full border border-slate-800"
+                      className="w-10 h-10 rounded-full border border-slate-800 object-cover"
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 border border-slate-700">
@@ -137,8 +137,8 @@ export default function BackendProfile() {
                   <div>
                     <p className="text-sm font-semibold text-white">
                       {backendUser.first_name || backendUser.last_name
-                        ? `${backendUser.first_name} ${backendUser.last_name}`.trim()
-                        : clerkUser?.fullName || "Clerk User"}
+                        ? `${backendUser.first_name || ""} ${backendUser.last_name || ""}`.trim()
+                        : "Admin User"}
                     </p>
                     <p className="text-xs text-slate-500 font-mono">{backendUser.id}</p>
                   </div>
@@ -193,8 +193,8 @@ export default function BackendProfile() {
       </div>
 
       <div className="mt-6 pt-4 border-t border-slate-900 text-[10px] text-slate-500 flex justify-between items-center">
-        <span>Target: Go/Gin Middleware & Postgres</span>
-        <span>SSL Secured</span>
+        <span>Target: Go Backend & Postgres</span>
+        <span>JWT Secured</span>
       </div>
     </div>
   );

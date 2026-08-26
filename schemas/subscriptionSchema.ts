@@ -42,9 +42,34 @@ export const subscriptionPlanActionResponseSchema = z.object({
   message: z.string(),
 });
 
+export const reconciliationItemSchema = z.object({
+  id: z.number(),
+  razorpay_subscription_id: z.string(),
+  razorpay_plan_id: z.string(),
+  user_id: z.string().nullable().optional(),
+  payload: z.string().optional().default(""),
+  amount: z.number().optional().default(0),
+  razorpay_payment_id: z.string().nullable().optional(),
+  resolved_at: z.string().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string().optional(),
+});
+
+export const reconciliationListResponseSchema = z.object({
+  items: z.array(reconciliationItemSchema),
+  total: z.number(),
+});
+
+export const resolveReconciliationRequestSchema = z.object({
+  plan_id: z.number(),
+});
+
 export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>;
 export type CreateSubscriptionPlanRequest = z.infer<typeof createSubscriptionPlanRequestSchema>;
 export type UpdateSubscriptionPlanRequest = z.infer<typeof updateSubscriptionPlanRequestSchema>;
 export type SubscriptionHistoryItem = z.infer<typeof subscriptionHistoryItemSchema>;
 export type SubscriptionHistoryResponse = z.infer<typeof subscriptionHistoryResponseSchema>;
 export type SubscriptionPlanActionResponse = z.infer<typeof subscriptionPlanActionResponseSchema>;
+export type ReconciliationItem = z.infer<typeof reconciliationItemSchema>;
+export type ReconciliationListResponse = z.infer<typeof reconciliationListResponseSchema>;
+export type ResolveReconciliationRequest = z.infer<typeof resolveReconciliationRequestSchema>;

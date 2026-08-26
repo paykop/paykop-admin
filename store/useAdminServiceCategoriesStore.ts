@@ -45,7 +45,7 @@ export const useAdminServiceCategoriesStore = create<AdminServiceCategoriesState
       const token = await getToken();
       if (!token) throw new Error("No token");
       const resp = await fetchAdminServiceCategories(token);
-      set({ categories: resp.categories || [], error: null });
+      set({ categories: Array.isArray(resp) ? resp : (resp as any)?.categories || [], error: null });
     } catch (err: any) {
       // 404 means endpoint not yet deployed — show empty state gracefully
       if (err instanceof ApiError && err.status === 404) {

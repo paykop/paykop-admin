@@ -1,6 +1,9 @@
 // src/services/apiService.ts
 import axios from "axios";
 import { z } from "zod";
+import api, { postWithIdempotency, setTokens, getAccessToken, getRefreshToken, clearTokens, handleLogout } from "../lib/api/client";
+
+export { api, postWithIdempotency, setTokens, getAccessToken, getRefreshToken, clearTokens, handleLogout };
 
 interface FetchOptions {
   method?: string;
@@ -8,8 +11,6 @@ interface FetchOptions {
   body?: any;
   params?: Record<string, string>;
 }
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.example.com";
 
 /**
  * Custom error class for API failures
@@ -27,7 +28,7 @@ export class ApiError extends Error {
 }
 
 /**
- * Generic API request wrapper with built-in Zod validation for response data using Axios
+ * Generic API request wrapper with built-in Zod validation for response data using our Axios client
  */
 export async function apiRequest<TSchema extends z.ZodTypeAny>(
   endpoint: string,
@@ -47,30 +48,21 @@ export async function apiRequest<TSchema extends z.ZodTypeAny>(
       }
     }
 
-    // Generate idempotency key for specific financial endpoints
-    const isIdempotentEndpoint =
-      endpoint.match(/^\/api\/v1\/admin\/(refunds|subscriptions|campaigns|banners)/) &&
-      ["POST", "PUT"].includes((options.method || "GET").toUpperCase());
+    const method = (options.method || "GET").toUpperCase();
 
-    const idempotencyHeader = isIdempotentEndpoint
-      ? { "Idempotency-Key": crypto.randomUUID() }
-      : {};
-
-    const response = await axios({
-      url: `${API_BASE_URL}${endpoint}`,
-      method: (options.method || "GET") as any,
+    // Use interceptor-configured api client
+    const response = await api({
+      url: endpoint,
+      method: method as any,
       params,
       headers: {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true",
-        ...idempotencyHeader,
         ...options.headers,
       },
       data: requestData,
     });
 
     const data = response.data;
-    
+
     // Validate response using Zod schema to ensure data contract matching
     const result = schema.safeParse(data);
     if (!result.success) {
@@ -83,7 +75,11 @@ export async function apiRequest<TSchema extends z.ZodTypeAny>(
     if (axios.isAxiosError(error)) {
       const status = error.response?.status || 500;
       const info = error.response?.data;
-      const message = error.response?.data?.error || error.message;
+      const message =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        error.message;
       throw new ApiError(message, status, info);
     }
     if (error instanceof ApiError || error instanceof Error) {

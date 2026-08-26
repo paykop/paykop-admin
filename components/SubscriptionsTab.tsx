@@ -2,7 +2,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/useAuth";
+import { useUserStore } from "../store/useUserStore";
+import { isAdmin } from "@/lib/rbac";
 import { Card, CardContent } from "./ui/card";
 import {
   Dialog,
@@ -12,20 +14,37 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { Plus, Check, Trash2, Loader2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Plus, Check, Trash2, Loader2, Edit } from "lucide-react";
 import {
   fetchSubscriptionPlans,
   createSubscriptionPlan,
+  updateSubscriptionPlan,
   deleteSubscriptionPlan,
+  fetchSubscriptionHistory,
+  fetchSubscriptionReconciliations,
+  resolveSubscriptionReconciliation,
 } from "../services/subscriptionService";
-import { SubscriptionPlan } from "../schemas/subscriptionSchema";
+import { SubscriptionPlan, ReconciliationItem, SubscriptionHistoryItem } from "../schemas/subscriptionSchema";
+import { toast } from "./ui/toast";
+
+type Panel = "plans" | "history" | "reconciliation";
 
 export default function SubscriptionsTab() {
   const { getToken } = useAuth();
+  const backendUser = useUserStore((s) => s.backendUser);
+  const canManagePlans = isAdmin(backendUser?.role);
+
+  const [panel, setPanel] = useState<Panel>("plans");
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [items, setItems] = useState<ReconciliationItem[]>([]);
+  const [history, setHistory] = useState<SubscriptionHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editPlan, setEditPlan] = useState<SubscriptionPlan | null>(null);
   const [newPlan, setNewPlan] = useState({ name: "", price: "", duration_days: "30" });
+  const [resolvePlanId, setResolvePlanId] = useState<Record<number, string>>({});
+  const [processingId, setProcessingId] = useState<number | null>(null);
 
   const loadPlans = async () => {
     try {
@@ -41,13 +60,50 @@ export default function SubscriptionsTab() {
     }
   };
 
+  const loadHistory = async () => {
+    try {
+      setLoading(true);
+      const token = await getToken();
+      if (!token) return;
+      const data = await fetchSubscriptionHistory(token);
+      setHistory(data.subscriptions || []);
+    } catch (err) {
+      console.error("Failed to fetch history:", err);
+      toast.error("Failed to load subscription history.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadReconciliations = async () => {
+    try {
+      setLoading(true);
+      const token = await getToken();
+      if (!token) return;
+      const [data, planData] = await Promise.all([
+        fetchSubscriptionReconciliations(token),
+        plans.length === 0 ? fetchSubscriptionPlans(token) : Promise.resolve(plans),
+      ]);
+      setItems(data.items || []);
+      if (plans.length === 0) setPlans(planData);
+    } catch (err) {
+      console.error("Failed to fetch reconciliations:", err);
+      toast.error("Failed to load reconciliation queue.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    loadPlans();
-  }, [getToken]);
+    if (panel === "plans") loadPlans();
+    else if (panel === "history") loadHistory();
+    else loadReconciliations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getToken, panel]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPlan.name || !newPlan.price || !newPlan.duration_days) return;
+    if (!canManagePlans || !newPlan.name || !newPlan.price || !newPlan.duration_days) return;
 
     try {
       const token = await getToken();
@@ -56,36 +112,88 @@ export default function SubscriptionsTab() {
       const priceInPaise = Math.round(parseFloat(newPlan.price) * 100);
       const durationDays = parseInt(newPlan.duration_days, 10);
 
-      await createSubscriptionPlan(token, {
-        name: newPlan.name,
-        price: priceInPaise,
-        duration_days: durationDays,
-        is_active: true,
-      });
+      if (editPlan) {
+        await updateSubscriptionPlan(token, editPlan.id, {
+          name: newPlan.name,
+          price: priceInPaise,
+          duration_days: durationDays,
+        });
+        toast.success("Plan updated.");
+      } else {
+        await createSubscriptionPlan(token, {
+          name: newPlan.name,
+          price: priceInPaise,
+          duration_days: durationDays,
+          is_active: true,
+        });
+        toast.success("Plan created.");
+      }
 
       setNewPlan({ name: "", price: "", duration_days: "30" });
+      setEditPlan(null);
       setModalOpen(false);
       loadPlans();
     } catch (err) {
-      console.error("Failed to create plan:", err);
-      alert("Error creating plan");
+      console.error("Failed to save plan:", err);
+      alert("Error saving plan");
     }
   };
 
+  const openEdit = (plan: SubscriptionPlan) => {
+    setEditPlan(plan);
+    setNewPlan({
+      name: plan.name,
+      price: String(plan.price / 100),
+      duration_days: String(plan.duration_days),
+    });
+    setModalOpen(true);
+  };
+
   const handleDelete = async (id: number) => {
+    if (!canManagePlans) return;
     if (!confirm("Are you sure you want to deactivate/delete this subscription plan?")) return;
     try {
       const token = await getToken();
       if (!token) return;
       await deleteSubscriptionPlan(token, id);
+      toast.success("Subscription plan deleted successfully!");
       loadPlans();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to delete plan:", err);
-      alert("Error deactivating plan");
+      const msg = err?.message || "";
+      if (msg.includes("in use") || msg.includes("cannot be modified or deleted")) {
+        toast.error(
+          "Cannot delete plan because active user subscriptions or payments are linked to it.",
+          "Plan In Use"
+        );
+      } else {
+        toast.error(msg || "Failed to delete subscription plan.");
+      }
     }
   };
 
-  if (loading) {
+  const handleResolve = async (id: number) => {
+    if (!canManagePlans) return;
+    const planId = parseInt(resolvePlanId[id] || "", 10);
+    if (!planId) {
+      toast.error("Select a local plan to map this subscription.");
+      return;
+    }
+    setProcessingId(id);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      await resolveSubscriptionReconciliation(token, id, planId);
+      toast.success("Reconciliation resolved successfully.");
+      loadReconciliations();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to resolve reconciliation.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  if (loading && plans.length === 0 && items.length === 0 && history.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -95,126 +203,272 @@ export default function SubscriptionsTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Subscription plans</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Create, edit & manage membership tiers</p>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Subscriptions</h2>
+          <p className="text-sm text-slate-500 mt-0.5">Membership tiers and webhook reconciliation</p>
         </div>
-        <div>
-          <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-            <DialogTrigger asChild>
-              <Button
-                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm shadow-blue-500/10 cursor-pointer h-9"
-              >
-                <Plus className="w-4 h-4" />
-                <span>New plan</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl p-6 text-left">
-              <DialogHeader>
-                <DialogTitle className="text-base font-bold text-slate-900 mb-2">Create Membership Tier</DialogTitle>
-              </DialogHeader>
-
-              <form onSubmit={handleCreate} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-semibold mb-1 text-slate-500 uppercase tracking-wider">Plan Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Pro Seller, Growth"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
-                    value={newPlan.name}
-                    onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-1 text-slate-500 uppercase tracking-wider">Monthly Price (INR)</label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="e.g. 499"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
-                    value={newPlan.price}
-                    onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-1 text-slate-500 uppercase tracking-wider">Duration (Days)</label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="e.g. 30"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
-                    value={newPlan.duration_days}
-                    onChange={(e) => setNewPlan({ ...newPlan, duration_days: e.target.value })}
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <Button
-                    type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl transition text-sm flex items-center justify-center cursor-pointer shadow-md shadow-blue-500/10 border-transparent h-10"
-                  >
-                    Create tier
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Plans List */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {plans.length === 0 ? (
-          <div className="col-span-full bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-500 font-medium">
-            No active subscription plans found. Click &quot;New plan&quot; to configure one.
-          </div>
-        ) : (
-          plans.map((plan) => (
-            <Card
-              key={plan.id}
-              className={`relative bg-white border rounded-2xl shadow-sm flex flex-col justify-between min-h-[190px] border-slate-200`}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 flex-wrap">
+            <button
+              onClick={() => setPanel("plans")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
+                panel === "plans" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+              }`}
             >
-              <CardContent className="p-6 flex flex-col justify-between h-full w-full">
-                <div>
-                  <h3 className="font-bold text-slate-800 text-sm">{plan.name}</h3>
-                  <p className="text-3xl font-extrabold text-slate-900 tracking-tight mt-3">₹{plan.price / 100}</p>
-                  <p className="text-xs text-slate-400 font-semibold mt-1">{plan.duration_days} days validity</p>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between">
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    plan.is_active 
-                      ? "bg-emerald-50 border border-emerald-200 text-emerald-600" 
-                      : "bg-slate-100 border border-slate-200 text-slate-500"
-                  }`}>
-                    {plan.is_active ? (
-                      <>
-                        <Check className="w-3 h-3 shrink-0" />
-                        Active
-                      </>
-                    ) : (
-                      "Suspended"
-                    )}
-                  </span>
-                  
-                  <button
-                    onClick={() => handleDelete(plan.id)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                    title="Deactivate Plan"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+              Plans
+            </button>
+            <button
+              onClick={() => setPanel("history")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
+                panel === "history" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+              }`}
+            >
+              History
+            </button>
+            <button
+              onClick={() => setPanel("reconciliation")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
+                panel === "reconciliation" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+              }`}
+            >
+              Reconciliation
+            </button>
+          </div>
+          {panel === "plans" && canManagePlans && (
+            <Dialog
+              open={modalOpen}
+              onOpenChange={(open) => {
+                setModalOpen(open);
+                if (!open) {
+                  setEditPlan(null);
+                  setNewPlan({ name: "", price: "", duration_days: "30" });
+                }
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm shadow-blue-500/10 cursor-pointer h-9">
+                  <Plus className="w-4 h-4" />
+                  <span>New plan</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-md max-h-[85vh] overflow-y-auto bg-white border border-slate-200 rounded-2xl shadow-2xl p-6 text-left">
+                <DialogHeader>
+                  <DialogTitle className="text-base font-bold text-slate-900 mb-2">
+                    {editPlan ? "Edit Membership Tier" : "Create Membership Tier"}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCreate} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-semibold mb-1 text-slate-500 uppercase tracking-wider">Plan Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Pro Seller, Growth"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
+                      value={newPlan.name}
+                      onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1 text-slate-500 uppercase tracking-wider">Monthly Price (INR)</label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 499"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
+                      value={newPlan.price}
+                      onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1 text-slate-500 uppercase tracking-wider">Duration (Days)</label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 30"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
+                      value={newPlan.duration_days}
+                      onChange={(e) => setNewPlan({ ...newPlan, duration_days: e.target.value })}
+                    />
+                  </div>
+                  <div className="pt-2">
+                    <Button
+                      type="submit"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl transition text-sm flex items-center justify-center cursor-pointer shadow-md shadow-blue-500/10 border-transparent h-10"
+                    >
+                      {editPlan ? "Save changes" : "Create tier"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </div>
+
+      {panel === "plans" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {plans.length === 0 ? (
+            <div className="col-span-full bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-500 font-medium">
+              No active subscription plans found.
+            </div>
+          ) : (
+            plans.map((plan) => (
+              <Card
+                key={plan.id}
+                className="relative bg-white border rounded-2xl shadow-sm flex flex-col justify-between min-h-[190px] border-slate-200"
+              >
+                <CardContent className="p-6 flex flex-col justify-between h-full w-full">
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm">{plan.name}</h3>
+                    <p className="text-3xl font-extrabold text-slate-900 tracking-tight mt-3">₹{plan.price / 100}</p>
+                    <p className="text-xs text-slate-400 font-semibold mt-1">{plan.duration_days} days validity</p>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        plan.is_active
+                          ? "bg-emerald-50 border border-emerald-200 text-emerald-600"
+                          : "bg-slate-100 border border-slate-200 text-slate-500"
+                      }`}
+                    >
+                      {plan.is_active ? (
+                        <>
+                          <Check className="w-3 h-3 shrink-0" />
+                          Active
+                        </>
+                      ) : (
+                        "Suspended"
+                      )}
+                    </span>
+                    {canManagePlans && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openEdit(plan)}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          title="Edit Plan"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(plan.id)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          title="Deactivate Plan"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      ) : panel === "history" ? (
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          {history.length === 0 ? (
+            <div className="p-10 text-center text-slate-500 text-sm">No subscription history.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table className="text-xs">
+                <TableHeader className="bg-slate-50">
+                  <TableRow className="border-b border-slate-100 hover:bg-transparent">
+                    <TableHead className="p-4 pl-6 text-slate-400 font-bold uppercase tracking-wider text-[10px]">User</TableHead>
+                    <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Plan</TableHead>
+                    <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Status</TableHead>
+                    <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Starts</TableHead>
+                    <TableHead className="p-4 pr-6 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Expires</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100">
+                  {history.map((h) => (
+                    <TableRow key={h.id} className="hover:bg-slate-50/50 border-b border-slate-100">
+                      <TableCell className="p-4 pl-6 font-mono text-[11px]">{h.user_id}</TableCell>
+                      <TableCell className="p-4 font-semibold text-slate-700">{h.plan}</TableCell>
+                      <TableCell className="p-4 capitalize text-slate-600">{h.status}</TableCell>
+                      <TableCell className="p-4 text-slate-500">{new Date(h.starts_at).toLocaleString("en-IN")}</TableCell>
+                      <TableCell className="p-4 pr-6 text-slate-500">{new Date(h.expires_at).toLocaleString("en-IN")}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          {items.length === 0 ? (
+            <div className="p-10 text-center text-slate-500 text-sm">No unresolved reconciliation items.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table className="text-xs">
+                <TableHeader className="bg-slate-50">
+                  <TableRow className="border-b border-slate-100 hover:bg-transparent">
+                    <TableHead className="p-4 pl-6 text-slate-400 font-bold uppercase tracking-wider text-[10px]">User</TableHead>
+                    <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Razorpay Plan</TableHead>
+                    <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Amount</TableHead>
+                    <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Created</TableHead>
+                    <TableHead className="p-4 pr-6 text-right text-slate-400 font-bold uppercase tracking-wider text-[10px]">Resolve</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100">
+                  {items.map((item) => (
+                    <TableRow key={item.id} className="hover:bg-slate-50/50 border-b border-slate-100">
+                      <TableCell className="p-4 pl-6 font-mono text-[11px] text-slate-700">
+                        {item.user_id || "—"}
+                      </TableCell>
+                      <TableCell className="p-4 font-mono text-[11px] text-slate-600">
+                        {item.razorpay_plan_id}
+                      </TableCell>
+                      <TableCell className="p-4 font-bold text-slate-800">
+                        ₹{(item.amount / 100).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="p-4 text-slate-500">
+                        {new Date(item.created_at).toLocaleString("en-IN")}
+                      </TableCell>
+                      <TableCell className="p-4 pr-6 text-right">
+                        {canManagePlans ? (
+                          <div className="flex justify-end items-center gap-2 flex-wrap">
+                            <select
+                              className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold"
+                              value={resolvePlanId[item.id] || ""}
+                              onChange={(e) =>
+                                setResolvePlanId((prev) => ({ ...prev, [item.id]: e.target.value }))
+                              }
+                            >
+                              <option value="">Select plan</option>
+                              {plans.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name}
+                                </option>
+                              ))}
+                            </select>
+                            <Button
+                              onClick={() => handleResolve(item.id)}
+                              disabled={processingId === item.id}
+                              className="h-8 px-3 rounded-lg bg-blue-600 text-white text-[10px] font-bold cursor-pointer"
+                            >
+                              {processingId === item.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                "Resolve"
+                              )}
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">Admin only</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

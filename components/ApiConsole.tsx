@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/useAuth";
 import { Terminal, Play, Loader2 } from "lucide-react";
 import {
   testAdminDashboard,
@@ -46,7 +46,7 @@ export default function ApiConsole() {
       } else {
         const token = await getToken();
         if (!token) {
-          addLog("UNKNOWN", "/api/v1/...", "401 Unauthorized", { error: "No Clerk session token found." }, true);
+          addLog("UNKNOWN", "/api/v1/...", "401 Unauthorized", { error: "No authentication session token found." }, true);
           setRunning(null);
           return;
         }

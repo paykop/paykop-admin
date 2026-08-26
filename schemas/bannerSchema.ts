@@ -31,10 +31,16 @@ export const bannerActionResponseSchema = z.object({
   message: z.string(),
 });
 
-export const bannerListResponseSchema = z.object({
-  banners: z.array(bannerItemSchema),
-  total: z.number().optional(),
-});
+export const bannerListResponseSchema = z.union([
+  z.object({
+    banners: z.array(bannerItemSchema),
+    total: z.number().optional(),
+  }),
+  z.array(bannerItemSchema).transform((banners) => ({
+    banners,
+    total: banners.length,
+  })),
+]);
 
 export type BannerItem = z.infer<typeof bannerItemSchema>;
 export type CreateBannerRequest = z.infer<typeof createBannerRequestSchema>;

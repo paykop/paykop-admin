@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/useAuth";
 import { useAdminLogsStore } from "../store/useAdminLogsStore";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Loader2, Activity } from "lucide-react";

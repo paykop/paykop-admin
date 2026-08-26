@@ -1,28 +1,46 @@
 // src/components/DashboardLayout.tsx
 "use client";
 
-import React, { useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import DashboardSidebar from "./DashboardSidebar";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { Loader2, ShieldAlert, Menu } from "lucide-react";
+import NotificationPopover from "./NotificationPopover";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { isLoaded, userId, getToken } = useAuth();
+  const router = useRouter();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const { backendUser, loading, error, fetchProfile } = useUserStore();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (isLoaded && userId && !backendUser && !error && !loading) {
+    if (isLoaded && !isSignedIn) {
+      router.replace("/sign-in");
+    }
+  }, [isLoaded, isSignedIn, router]);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn && !backendUser && !error && !loading) {
       fetchProfile(getToken);
     }
-  }, [isLoaded, userId, backendUser, error, loading]);
+  }, [isLoaded, isSignedIn, backendUser, error, loading, fetchProfile, getToken]);
 
-  // Loading spinner during auth or profile handshake
-  if (!isLoaded || (loading && !backendUser)) {
+  if (isLoaded && !isSignedIn) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+        <p className="text-slate-400 text-sm font-semibold tracking-wide">Redirecting to sign-in...</p>
+      </div>
+    );
+  }
+
+  if (!isLoaded || loading || (!backendUser && !error)) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
@@ -31,7 +49,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   }
 
-  // Access Denied / User doesn't exist in local database
   if (error) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
@@ -54,13 +71,36 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex text-slate-800">
-      {/* Sidebar Navigation */}
-      <DashboardSidebar />
+      <DashboardSidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Main Workspace Area */}
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
-        <div className="max-w-6xl mx-auto w-full">
-          {children}
+      <main className="flex-1 overflow-y-auto max-h-screen flex flex-col min-w-0">
+        <header className="h-14 md:h-16 border-b border-slate-200 bg-white/80 backdrop-blur px-4 md:px-8 flex items-center justify-between sticky top-0 z-30 shrink-0 shadow-sm gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden p-2 -ml-1 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0"
+              aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider truncate hidden sm:inline">
+              Live Security Handshake Active
+            </span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider sm:hidden">
+              Live
+            </span>
+          </div>
+          <div className="flex items-center gap-4 shrink-0">
+            <NotificationPopover />
+          </div>
+        </header>
+
+        <div className="flex-1 p-4 md:p-8">
+          <div className="max-w-6xl mx-auto w-full">
+            {children}
+          </div>
         </div>
       </main>
     </div>

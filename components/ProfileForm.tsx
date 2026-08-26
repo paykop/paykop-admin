@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import { updateProfileSchema, UpdateProfileInput } from "../schemas/userSchema";
 import { updateUserProfile } from "../services/userService";
@@ -58,7 +58,7 @@ export default function ProfileForm() {
     try {
       const token = await getToken();
       if (!token) {
-        throw new Error("Unauthorized: No Clerk token found");
+        throw new Error("Unauthorized: No authentication token found");
       }
 
       // PATCH to backend using our user service

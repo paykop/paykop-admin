@@ -45,6 +45,8 @@ export const adminProductListItemSchema = z.object({
   price: z.number(),
   stock: z.number(),
   category: z.string().optional().default(""),
+  delivery_scope: z.string().nullable().optional(),
+  is_cod_allowed: z.boolean().optional().default(false),
   // July 2026: images as native JSON array
   images: z.union([z.array(z.string()), z.string()]).optional().default([]),
   status: z.string(),

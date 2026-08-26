@@ -6,6 +6,8 @@ import {
   fetchUserPermissions,
   syncUser,
 } from "../services/userService";
+import { getAccessToken, clearTokens } from "../lib/api/client";
+import { isStaff } from "../lib/rbac";
 
 interface UserState {
   backendUser: BackendUser | null;
@@ -14,88 +16,120 @@ interface UserState {
   permissionsLoading: boolean;
   error: string | null;
   setBackendUser: (backendUser: BackendUser | null) => void;
-  fetchProfile: (getToken: () => Promise<string | null>) => Promise<void>;
-  fetchPermissions: (getToken: () => Promise<string | null>) => Promise<void>;
+  fetchProfile: (getToken?: () => Promise<string | null>) => Promise<BackendUser | null>;
+  fetchPermissions: (getToken?: () => Promise<string | null>) => Promise<void>;
   clearBackendUser: () => void;
 }
 
-export const useUserStore = create<UserState>((set) => ({
+/** Shared in-flight profile fetch so concurrent callers (sign-in + layout + Strict Mode) share one request. */
+let fetchProfileInFlight: Promise<BackendUser | null> | null = null;
+
+export const useUserStore = create<UserState>((set, get) => ({
   backendUser: null,
   permissions: null,
   loading: false,
   permissionsLoading: false,
   error: null,
   setBackendUser: (backendUser) => set({ backendUser }),
-  
+
   fetchProfile: async (getToken) => {
-    set({ loading: true, error: null });
-    try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error("No authentication token found. Please sign in again.");
-      }
-
-      // Query database directly to check if the user exists
-      let response;
-      try {
-        response = await fetchUserProfile(token);
-      } catch (err: any) {
-        if (err?.status === 401) {
-          // Auto-sync fallback for first-time admin login
-          const syncRes = await syncUser(token);
-          if (syncRes.role === "admin") {
-            response = await fetchUserProfile(token);
-          } else {
-            throw new Error("Access Denied: Only accounts with the 'admin' role are authorized to access this portal.");
-          }
-        } else {
-          throw err;
-        }
-      }
-
-      if (response.role !== "admin") {
-        set({
-          backendUser: null,
-          permissions: null,
-          error: "Access Denied: Only accounts with the 'admin' role are authorized to access this portal.",
-        });
-        return;
-      }
-
-      set({ backendUser: response, error: null });
-
-      // Fetch permissions in background
-      try {
-        const perms = await fetchUserPermissions(token);
-        set({ permissions: perms });
-      } catch (permsErr) {
-        console.error("Failed to fetch user permissions in background:", permsErr);
-      }
-    } catch (err: any) {
-      console.error("Failed to fetch backend profile:", err);
-      // If error status is 401, it means the user record is not found in the DB (RequireAuth failed)
-      const errorMsg = err?.status === 401 
-        ? "Access Denied: This administrator account does not exist in the database."
-        : err?.message || "Could not connect to Go backend.";
-      set({ backendUser: null, permissions: null, error: errorMsg });
-    } finally {
-      set({ loading: false });
+    if (fetchProfileInFlight) {
+      return fetchProfileInFlight;
     }
+
+    fetchProfileInFlight = (async () => {
+      set({ loading: true, error: null });
+      try {
+        const token = getToken ? await getToken() : getAccessToken();
+        if (!token) {
+          throw new Error("No authentication token found. Please sign in again.");
+        }
+
+        let response: BackendUser;
+        try {
+          response = await fetchUserProfile(token);
+        } catch (err: any) {
+          const isUserNotFound =
+            err?.status === 401 ||
+            err?.status === 404 ||
+            err?.status === 400 ||
+            (err?.message && String(err.message).toLowerCase().includes("user not found"));
+
+          if (isUserNotFound) {
+            const syncRes = await syncUser(token);
+            if (isStaff(syncRes.role)) {
+              response = await fetchUserProfile(token);
+            } else {
+              clearTokens();
+              throw new Error("Access Denied: Only admin or support staff accounts can access this portal.");
+            }
+          } else {
+            throw err;
+          }
+        }
+
+        if (!isStaff(response.role)) {
+          clearTokens();
+          set({
+            backendUser: null,
+            permissions: null,
+            error: "Access Denied: Only admin or support staff accounts can access this portal.",
+          });
+          return null;
+        }
+
+        set({ backendUser: response, error: null });
+
+        // Permissions are optional for the staff gate — skip if already loaded to reduce rate-limit pressure
+        if (!get().permissions) {
+          try {
+            const perms = await fetchUserPermissions(token);
+            set({ permissions: perms });
+          } catch (permsErr: any) {
+            if (permsErr?.status !== 429) {
+              console.error("Failed to fetch user permissions in background:", permsErr);
+            }
+          }
+        }
+
+        return response;
+      } catch (err: any) {
+        console.error("Failed to fetch backend profile:", err);
+        const errorMsg =
+          err?.status === 401
+            ? "Access Denied: This administrator account does not exist in the database."
+            : err?.message || "Could not connect to backend.";
+        set({ backendUser: null, permissions: null, error: errorMsg });
+        return null;
+      } finally {
+        set({ loading: false });
+        fetchProfileInFlight = null;
+      }
+    })();
+
+    return fetchProfileInFlight;
   },
 
   fetchPermissions: async (getToken) => {
+    if (get().permissions || get().permissionsLoading) return;
+
     set({ permissionsLoading: true });
     try {
-      const token = await getToken();
+      const token = getToken ? await getToken() : getAccessToken();
       if (!token) return;
       const response = await fetchUserPermissions(token);
       set({ permissions: response });
     } catch (err: any) {
-      console.error("Failed to fetch permissions:", err);
+      if (err?.status !== 429) {
+        console.error("Failed to fetch permissions:", err);
+      }
     } finally {
       set({ permissionsLoading: false });
     }
   },
 
-  clearBackendUser: () => set({ backendUser: null, permissions: null, error: null, loading: false }),
+  clearBackendUser: () => {
+    fetchProfileInFlight = null;
+    set({ backendUser: null, permissions: null, error: null, loading: false });
+  },
 }));

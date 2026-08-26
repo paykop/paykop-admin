@@ -15,7 +15,7 @@ import {
 /**
  * Fetch all service categories (Admin)
  */
-export async function fetchAdminServiceCategories(token: string): Promise<ServiceCategoryListResponse> {
+export async function fetchAdminServiceCategories(token: string): Promise<ServiceCategoryItem[]> {
   return apiRequest("/api/v1/admin/service-categories", serviceCategoryListResponseSchema, {
     headers: {
       Authorization: `Bearer ${token}`,

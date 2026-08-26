@@ -15,7 +15,7 @@ import {
 } from "../schemas/userSchema";
 
 /**
- * Sync user from Clerk token to Neon DB
+ * Sync user profile to database
  */
 export async function syncUser(token: string) {
   return apiRequest("/api/v1/auth/sync", syncResponseSchema, {
@@ -105,8 +105,8 @@ export async function fetchUsers(token: string, page = 1, limit = 10, role?: str
 /**
  * Suspend user (Admin)
  */
-export async function suspendUser(token: string, id: string, suspend: boolean): Promise<any> {
-  return apiRequest(`/api/v1/admin/users/${id}/suspend`, z.any(), {
+export async function suspendUser(token: string, id: string, suspend: boolean) {
+  return apiRequest(`/api/v1/admin/users/${id}/suspend`, actionResponseSchema, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -118,8 +118,8 @@ export async function suspendUser(token: string, id: string, suspend: boolean): 
 /**
  * Verify user (Admin)
  */
-export async function verifyUser(token: string, id: string): Promise<any> {
-  return apiRequest(`/api/v1/admin/users/${id}/verify`, z.any(), {
+export async function verifyUser(token: string, id: string) {
+  return apiRequest(`/api/v1/admin/users/${id}/verify`, actionResponseSchema, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -141,8 +141,8 @@ export async function getUser(token: string, id: string): Promise<UserDetailsRes
 /**
  * Update user details (Admin)
  */
-export async function updateUser(token: string, id: string, data: UpdateUserRequest): Promise<any> {
-  return apiRequest(`/api/v1/admin/users/${id}`, z.any(), {
+export async function updateUser(token: string, id: string, data: UpdateUserRequest) {
+  return apiRequest(`/api/v1/admin/users/${id}`, actionResponseSchema, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -154,9 +154,8 @@ export async function updateUser(token: string, id: string, data: UpdateUserRequ
 /**
  * Update user role (Admin)
  */
-export async function updateUserRole(token: string, id: string, role: string): Promise<any> {
-  console.log(`[API] Updating role for user ${id} to ${role}`);
-  return apiRequest(`/api/v1/admin/users/${id}/role`, z.any(), {
+export async function updateUserRole(token: string, id: string, role: string) {
+  return apiRequest(`/api/v1/admin/users/${id}/role`, actionResponseSchema, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,

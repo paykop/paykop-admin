@@ -1,40 +1,38 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/unauthorized(.*)']);
+const publicPaths = ['/sign-in', '/login', '/unauthorized'];
 
-export default clerkMiddleware(async (auth, request) => {
-  // Allow public routes and unauthorized page through without checks
-  if (isPublicRoute(request)) {
+export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Allow public routes and static assets
+  if (publicPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  const { userId, sessionClaims } = await auth();
+  const token = request.cookies.get('access_token')?.value || request.cookies.get('refresh_token')?.value;
 
-  // If not authenticated, redirect to sign-in page
-  if (!userId) {
-    return NextResponse.redirect(new URL('/sign-in', request.url));
-  }
-
-  // Extract the role from session claims (checking root claims, publicMetadata, and metadata)
-  const role =
-    (sessionClaims as any)?.role ||
-    (sessionClaims as any)?.publicMetadata?.role ||
-    (sessionClaims as any)?.metadata?.role;
-
-  // Reject access and redirect to /unauthorized if the user is not an admin
-  if (role !== 'admin') {
-    return NextResponse.redirect(new URL('/unauthorized', request.url));
+  // If no auth tokens present, redirect to sign-in page
+  if (!token) {
+    const signInUrl = new URL('/sign-in', request.url);
+    return NextResponse.redirect(signInUrl);
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files (images, etc.)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
+
+export default proxy;

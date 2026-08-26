@@ -1,15 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/useAuth";
+import { useUserStore } from "../store/useUserStore";
+import { isAdmin } from "@/lib/rbac";
 import { useAdminProductsStore } from "../store/useAdminProductsStore";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
 import { Check, X, Package, Loader2, Trash2 } from "lucide-react";
+import { toast } from "./ui/toast";
+
+const PRODUCT_STATUSES = ["pending", "approved", "rejected", "removed"] as const;
 
 export default function ProductsTab() {
   const { getToken } = useAuth();
-  const [filterStatus, setFilterStatus] = useState<string>("approved");
+  const backendUser = useUserStore((s) => s.backendUser);
+  const canDelete = isAdmin(backendUser?.role);
+  const [filterStatus, setFilterStatus] = useState<string>("pending");
   const { products, loading, fetchProducts, updateProductStatus, deleteProductAction } = useAdminProductsStore();
   const [processingId, setProcessingId] = useState<number | null>(null);
 
@@ -20,29 +27,39 @@ export default function ProductsTab() {
 
   const handleUpdateStatus = async (id: number, status: string) => {
     setProcessingId(id);
-    await updateProductStatus(getToken, id, status);
-    setProcessingId(null);
+    try {
+      await updateProductStatus(getToken, id, status);
+      toast.success(`Product marked ${status}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update product status");
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      setProcessingId(id);
+    if (!canDelete) return;
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    setProcessingId(id);
+    try {
       await deleteProductAction(getToken, id);
+      toast.success("Product deleted");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete product");
+    } finally {
       setProcessingId(null);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Products Management</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Manage marketplace products and update their visibility.</p>
+        <p className="text-sm text-slate-500 mt-0.5">Moderate marketplace products and update their visibility.</p>
       </div>
 
-      {/* Tabs Row */}
-      <div className="flex gap-2">
-        {["approved", "rejected", "removed"].map((status) => (
+      <div className="flex gap-2 flex-wrap">
+        {PRODUCT_STATUSES.map((status) => (
           <button
             key={status}
             onClick={() => setFilterStatus(status)}
@@ -57,7 +74,6 @@ export default function ProductsTab() {
         ))}
       </div>
 
-      {/* Main Table Card */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         {loading && products.length === 0 ? (
           <div className="flex justify-center items-center h-64">
@@ -67,7 +83,7 @@ export default function ProductsTab() {
           <div className="p-10 text-center flex flex-col items-center justify-center gap-2">
             <Package className="w-10 h-10 text-slate-300" />
             <p className="text-slate-800 font-bold text-sm">No products found</p>
-            <p className="text-xs text-slate-400">There are no products with the status "{filterStatus}".</p>
+            <p className="text-xs text-slate-400">There are no products with the status &quot;{filterStatus}&quot;.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -111,7 +127,7 @@ export default function ProductsTab() {
                               <Check className="w-3 h-3" /> Approve
                             </Button>
                           )}
-                          {filterStatus !== "rejected" && filterStatus !== "removed" && (
+                          {filterStatus !== "rejected" && (
                             <Button
                               onClick={() => handleUpdateStatus(p.id, "rejected")}
                               variant="outline"
@@ -120,13 +136,24 @@ export default function ProductsTab() {
                               <X className="w-3 h-3" /> Reject
                             </Button>
                           )}
-                          <Button
-                            onClick={() => handleDelete(p.id)}
-                            variant="outline"
-                            className="h-7 px-2 rounded border border-red-200 hover:bg-red-50 text-red-500 text-[10px] inline-flex items-center gap-1 cursor-pointer"
-                          >
-                            <Trash2 className="w-3 h-3" /> Delete
-                          </Button>
+                          {filterStatus !== "removed" && (
+                            <Button
+                              onClick={() => handleUpdateStatus(p.id, "removed")}
+                              variant="outline"
+                              className="h-7 px-2 rounded border border-slate-200 hover:bg-slate-50 text-slate-600 text-[10px] inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              Remove
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              onClick={() => handleDelete(p.id)}
+                              variant="outline"
+                              className="h-7 px-2 rounded border border-red-200 hover:bg-red-50 text-red-500 text-[10px] inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </Button>
+                          )}
                         </div>
                       )}
                     </TableCell>

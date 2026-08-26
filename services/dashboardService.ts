@@ -1,6 +1,11 @@
 // src/services/dashboardService.ts
 import { apiRequest } from "./apiService";
-import { dashboardResponseSchema, DashboardResponse } from "../schemas/dashboardSchema";
+import {
+  dashboardResponseSchema,
+  DashboardResponse,
+  adminMetricsSchema,
+  AdminMetrics,
+} from "../schemas/dashboardSchema";
 
 /**
  * Fetch dashboard statistics via /admin/dashboard
@@ -24,3 +29,13 @@ export async function fetchAnalyticsStats(token: string): Promise<DashboardRespo
   });
 }
 
+/**
+ * Fetch operational diagnostics via /admin/metrics
+ */
+export async function fetchAdminMetrics(token: string): Promise<AdminMetrics> {
+  return apiRequest("/api/v1/admin/metrics", adminMetricsSchema, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}

@@ -1,5 +1,3 @@
-// src/services/productService.ts
-import { z } from "zod";
 import { apiRequest } from "./apiService";
 import {
   productListResponseSchema,
@@ -8,6 +6,7 @@ import {
   adminProductListResponseSchema,
   AdminProductListResponse,
 } from "../schemas/productSchema";
+import { actionResponseSchema } from "../schemas/userSchema";
 
 /**
  * Fetch list of approved products from the backend (paginated)
@@ -69,11 +68,11 @@ export async function fetchAdminProducts(token: string, page = 1, limit = 10, st
 }
 
 /**
- * Update product status (Admin)
+ * Update product status (Admin) — approved | rejected | removed
  */
-export async function updateAdminProductStatus(token: string, id: number, status: string): Promise<any> {
-  return apiRequest(`/api/v1/admin/products/${id}/status`, z.any(), {
-    method: "PATCH",
+export async function updateAdminProductStatus(token: string, id: number, status: string) {
+  return apiRequest(`/api/v1/admin/products/${id}/status`, actionResponseSchema, {
+    method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -82,24 +81,10 @@ export async function updateAdminProductStatus(token: string, id: number, status
 }
 
 /**
- * Approve a product (Admin)
- */
-export async function approveAdminProduct(token: string, id: number): Promise<any> {
-  console.log(`[API] Approving product ID: ${id}`);
-  return apiRequest(`/api/v1/admin/products/${id}/approve`, z.any(), {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-}
-
-/**
  * Delete a product (Admin)
  */
-export async function deleteAdminProduct(token: string, id: number): Promise<any> {
-  console.log(`[API] Deleting product ID: ${id}`);
-  return apiRequest(`/api/v1/admin/products/${id}`, z.any(), {
+export async function deleteAdminProduct(token: string, id: number) {
+  return apiRequest(`/api/v1/admin/products/${id}`, actionResponseSchema, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,

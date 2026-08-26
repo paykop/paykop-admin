@@ -10,6 +10,9 @@ export const serviceItemSchema = z.object({
   fees: z.number(),
   status: z.string(),
   address: z.string(),
+  fulfillment_type: z.string().nullable().optional(),
+  service_radius_km: z.number().nullable().optional(),
+  is_pay_on_service: z.boolean().optional().default(false),
   created_at: z.string(),
 });
 

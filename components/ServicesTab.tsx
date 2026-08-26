@@ -1,7 +1,8 @@
+// src/components/ServicesTab.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/lib/useAuth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
 import {
@@ -22,15 +23,14 @@ export default function ServicesTab() {
   const [filterStatus, setFilterStatus] = useState<string>("pending");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [processingId, setProcessingId] = useState<number | string | null>(null);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
 
-  const loadServices = async () => {
+  const loadServices = useCallback(async () => {
     try {
       setLoading(true);
       const token = await getToken();
-      if (!token) return;
-      const data = await fetchAdminServices(token, page, limit, filterStatus || undefined);
+      const data = await fetchAdminServices(token || undefined, page, limit, filterStatus || undefined);
       setServices(data.services || []);
       setTotal(data.total || 0);
     } catch (err) {
@@ -38,11 +38,11 @@ export default function ServicesTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken, page, limit, filterStatus]);
 
   useEffect(() => {
     loadServices();
-  }, [getToken, filterStatus, page]);
+  }, [loadServices]);
 
   // Reset page when status filter changes
   const handleFilterChange = (status: string) => {
@@ -50,12 +50,11 @@ export default function ServicesTab() {
     setPage(1);
   };
 
-  const handleUpdateStatus = async (id: number, status: string) => {
+  const handleUpdateStatus = async (id: number | string, status: string) => {
     setProcessingId(id);
     try {
       const token = await getToken();
-      if (!token) return;
-      await updateAdminServiceStatus(token, id, status);
+      await updateAdminServiceStatus(token || undefined, id, status);
       setSelectedService(null);
       loadServices();
     } catch (err) {
@@ -73,11 +72,11 @@ export default function ServicesTab() {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Service Listings Moderation</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Approve, reject, or suspend professional service listings submitted by providers.</p>
+        <p className="text-sm text-slate-500 mt-0.5">Approve, reject, or remove professional service listings submitted by providers.</p>
       </div>
 
       {/* Tabs Row */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {["pending", "approved", "rejected", "removed"].map((status) => (
           <button
             key={status}
@@ -155,11 +154,11 @@ export default function ServicesTab() {
                               <Check className="w-3 h-3" /> Approve
                             </Button>
                           )}
-                          {filterStatus !== "rejected" && filterStatus !== "removed" && (
+                          {filterStatus !== "rejected" && (
                             <Button
                               onClick={() => handleUpdateStatus(s.id, "rejected")}
                               variant="outline"
-                              className="h-7 px-2 rounded border border-amber-200 hover:bg-amber-50 text-amber-600 text-[10px] inline-flex items-center gap-1 cursor-pointer"
+                              className="h-7 px-2 rounded border border-rose-200 hover:bg-rose-50 text-rose-600 text-[10px] inline-flex items-center gap-1 cursor-pointer"
                             >
                               <X className="w-3 h-3" /> Reject
                             </Button>
@@ -168,7 +167,7 @@ export default function ServicesTab() {
                             <Button
                               onClick={() => handleUpdateStatus(s.id, "removed")}
                               variant="outline"
-                              className="h-7 px-2 rounded border border-red-200 hover:bg-red-50 text-red-500 text-[10px] inline-flex items-center gap-1 cursor-pointer"
+                              className="h-7 px-2 rounded border border-slate-200 hover:bg-slate-50 text-slate-600 text-[10px] inline-flex items-center gap-1 cursor-pointer"
                             >
                               <Trash2 className="w-3 h-3" /> Remove
                             </Button>
@@ -186,7 +185,7 @@ export default function ServicesTab() {
 
       {/* Pagination controls */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center bg-white border border-slate-200 px-6 py-3.5 rounded-2xl shadow-sm text-xs">
+        <div className="flex flex-wrap justify-between items-center gap-3 bg-white border border-slate-200 px-4 md:px-6 py-3.5 rounded-2xl shadow-sm text-xs">
           <span className="text-slate-500 font-semibold">
             Showing Page {page} of {totalPages} ({total} total items)
           </span>
@@ -213,7 +212,7 @@ export default function ServicesTab() {
 
       {/* Details View Dialog */}
       <Dialog open={!!selectedService} onOpenChange={() => setSelectedService(null)}>
-        <DialogContent className="w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-2xl p-6 text-left text-slate-800">
+        <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-white border border-slate-200 rounded-2xl shadow-2xl p-6 text-left text-slate-800">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">
               Service Listing Details
@@ -229,7 +228,7 @@ export default function ServicesTab() {
               </div>
 
               {/* Grid properties */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <h4 className="text-slate-400 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
                     <User className="w-3.5 h-3.5" /> Provider ID
@@ -290,20 +289,20 @@ export default function ServicesTab() {
                         <Check className="w-3.5 h-3.5" /> Approve Listing
                       </Button>
                     )}
-                    {selectedService.status !== "rejected" && selectedService.status !== "removed" && (
+                    {selectedService.status !== "rejected" && (
                       <Button
                         onClick={() => handleUpdateStatus(selectedService.id, "rejected")}
-                        className="bg-amber-600 hover:bg-amber-700 text-white font-bold h-9 px-4 rounded-xl text-xs flex items-center gap-1 shadow-sm shadow-amber-500/10 cursor-pointer"
+                        className="bg-rose-600 hover:bg-rose-700 text-white font-bold h-9 px-4 rounded-xl text-xs flex items-center gap-1 shadow-sm shadow-rose-500/10 cursor-pointer"
                       >
-                        <X className="w-3.5 h-3.5" /> Reject Listing
+                        <X className="w-3.5 h-3.5" /> Reject
                       </Button>
                     )}
                     {selectedService.status !== "removed" && (
                       <Button
                         onClick={() => handleUpdateStatus(selectedService.id, "removed")}
-                        className="bg-rose-600 hover:bg-rose-700 text-white font-bold h-9 px-4 rounded-xl text-xs flex items-center gap-1 shadow-sm shadow-rose-500/10 cursor-pointer"
+                        className="bg-slate-700 hover:bg-slate-800 text-white font-bold h-9 px-4 rounded-xl text-xs flex items-center gap-1 cursor-pointer"
                       >
-                        <Trash2 className="w-3.5 h-3.5" /> Remove Listing
+                        <Trash2 className="w-3.5 h-3.5" /> Remove
                       </Button>
                     )}
                     <Button

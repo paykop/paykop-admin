@@ -2,7 +2,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/useAuth";
+import { useUserStore } from "../store/useUserStore";
+import { isAdmin } from "@/lib/rbac";
 import { useAdminUsersStore } from "../store/useAdminUsersStore";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
@@ -11,11 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import {
   Loader2, Edit, Eye, Mail, Phone, MapPin, ShieldCheck, ShieldOff,
   User, CalendarDays, BadgeCheck, CreditCard, LinkIcon, FileText,
-  LogIn, Star, Trophy, Award,
+  LogIn, Star, Trophy, Award, Handshake, UserCog,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function UsersTab() {
   const { getToken } = useAuth();
+  const backendUser = useUserStore((s) => s.backendUser);
+  const canChangeRoles = isAdmin(backendUser?.role);
   const {
     users, loading, fetchAdminUsers, suspendAdminUser, verifyAdminUser,
     selectedUser, detailsLoading, fetchUserDetail, updateUserDetails, clearSelectedUser,
@@ -68,7 +73,21 @@ export default function UsersTab() {
       const payload: any = { first_name: editForm.first_name, last_name: editForm.last_name };
       const newRole = editForm.role?.trim().toLowerCase();
       const oldRole = selectedUser.role?.trim().toLowerCase();
-      if (newRole && newRole !== oldRole) payload.role = newRole;
+      if (newRole && newRole !== oldRole) {
+        if (!canChangeRoles) {
+          alert("Only admins can change user roles.");
+          return;
+        }
+        if (newRole === "agent" || oldRole === "agent") {
+          alert("Promote or demote agents from the Agents page so assignments stay consistent.");
+          return;
+        }
+        if (newRole === "admin") {
+          alert("Cannot promote users to admin via this screen.");
+          return;
+        }
+        payload.role = newRole;
+      }
       await updateUserDetails(getToken, selectedUser.id, payload);
       setEditModalOpen(false);
       clearSelectedUser();
@@ -112,8 +131,10 @@ export default function UsersTab() {
           <SelectContent>
             <SelectItem value="all">All Roles</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="support">Support</SelectItem>
             <SelectItem value="buyer">Buyer</SelectItem>
             <SelectItem value="seller">Seller</SelectItem>
+            <SelectItem value="agent">Agent</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -214,7 +235,7 @@ export default function UsersTab() {
 
       {/* VIEW DETAILS MODAL */}
       <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
-        <DialogContent className="sm:max-w-[560px] p-0 overflow-hidden rounded-2xl" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-[560px] max-h-[85vh] overflow-y-auto p-0 rounded-2xl" onInteractOutside={(e) => e.preventDefault()}>
           {detailsLoading ? (
             <div className="flex justify-center items-center p-16"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
           ) : selectedUser ? (
@@ -254,11 +275,61 @@ export default function UsersTab() {
                 </Section>
                 <Section title="Account Information">
                   <InfoRow icon={<User className="w-3.5 h-3.5" />} label="User ID" value={selectedUser.id} mono />
-                  <InfoRow icon={<LogIn className="w-3.5 h-3.5" />} label="Auth Source" value={selectedUser.auth_source || "—"} />
+                  <InfoRow icon={<LogIn className="w-3.5 h-3.5" />} label="Auth Provider" value={(selectedUser as any).auth_provider || selectedUser.auth_source || "—"} />
                   <InfoRow icon={<BadgeCheck className="w-3.5 h-3.5" />} label="KYC Status" value={selectedUser.kyc_status} badge badgeColor={selectedUser.kyc_status === "verified" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"} />
                   <InfoRow icon={<ShieldCheck className="w-3.5 h-3.5" />} label="Onboarding" value={selectedUser.is_onboarded ? "Completed" : "Pending"} badge badgeColor={selectedUser.is_onboarded ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"} />
                   <InfoRow icon={<CreditCard className="w-3.5 h-3.5" />} label="Subscription" value={selectedUser.has_subscription ? "Active" : "None"} badge badgeColor={selectedUser.has_subscription ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-500"} />
                 </Section>
+                {(selectedUser.onboarding_source ||
+                  selectedUser.created_by_agent_id ||
+                  selectedUser.onboarded_by_agent_id ||
+                  selectedUser.onboarded_at ||
+                  selectedUser.active_assignment) && (
+                  <Section title="Agent Provenance">
+                    {selectedUser.onboarding_source && (
+                      <InfoRow
+                        icon={<Handshake className="w-3.5 h-3.5" />}
+                        label="Onboarding Source"
+                        value={selectedUser.onboarding_source.replace(/_/g, " ")}
+                        badge
+                        badgeColor="bg-indigo-100 text-indigo-700"
+                      />
+                    )}
+                    {selectedUser.created_by_agent_id && (
+                      <InfoRow icon={<UserCog className="w-3.5 h-3.5" />} label="Created by Agent" value={selectedUser.created_by_agent_id} mono />
+                    )}
+                    {selectedUser.onboarded_by_agent_id && (
+                      <InfoRow icon={<UserCog className="w-3.5 h-3.5" />} label="Onboarded by Agent" value={selectedUser.onboarded_by_agent_id} mono />
+                    )}
+                    {selectedUser.onboarded_at && (
+                      <InfoRow icon={<CalendarDays className="w-3.5 h-3.5" />} label="Onboarded At" value={formatDate(selectedUser.onboarded_at)} />
+                    )}
+                    {selectedUser.active_assignment && (
+                      <>
+                        <InfoRow
+                          icon={<Handshake className="w-3.5 h-3.5" />}
+                          label="Assignment Status"
+                          value={selectedUser.active_assignment.status}
+                          badge
+                          badgeColor={selectedUser.active_assignment.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}
+                        />
+                        <InfoRow icon={<UserCog className="w-3.5 h-3.5" />} label="Assigned Agent" value={selectedUser.active_assignment.agent_id} mono />
+                        <InfoRow
+                          icon={<BadgeCheck className="w-3.5 h-3.5" />}
+                          label="Assignment ID"
+                          value={String(selectedUser.active_assignment.assignment_id)}
+                          mono
+                        />
+                      </>
+                    )}
+                  </Section>
+                )}
+                {selectedUser.role?.toLowerCase() === "agent" && (
+                  <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-xs text-blue-700">
+                    Manage this agent&apos;s role and seller assignments on the{" "}
+                    <Link href="/agents" className="font-bold underline underline-offset-2">Agents</Link> page.
+                  </div>
+                )}
                 {/* Gamification Section (July 2026) */}
                 <Section title="Gamification">
                   <InfoRow icon={<Star className="w-3.5 h-3.5" />} label="Community Score" value={String(selectedUser.community_score ?? 0)} />
@@ -301,13 +372,13 @@ export default function UsersTab() {
 
       {/* EDIT USER MODAL */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-[425px] max-h-[85vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader><DialogTitle>Edit User Profile</DialogTitle></DialogHeader>
           {detailsLoading ? (
             <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
           ) : selectedUser ? (
             <form onSubmit={handleSaveEdit} className="space-y-4 pt-4 text-sm">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-500">First Name</label>
                   <input value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} className="w-full px-3 py-2 border rounded-md outline-none focus:border-blue-500" required />
@@ -321,7 +392,7 @@ export default function UsersTab() {
                 <label className="text-xs font-semibold text-slate-500">Email Address</label>
                 <input value={selectedUser.email || ""} disabled className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-500">KYC Status</label>
                   <input value={selectedUser.kyc_status || "N/A"} disabled className="w-full px-3 py-2 border rounded-md bg-slate-50 text-slate-500 capitalize" />
@@ -333,14 +404,20 @@ export default function UsersTab() {
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-500">Role</label>
-                <Select value={editForm.role} onValueChange={(val) => setEditForm({ ...editForm, role: val })}>
+                <Select value={editForm.role} onValueChange={(val) => setEditForm({ ...editForm, role: val })} disabled={!canChangeRoles}>
                   <SelectTrigger className="w-full"><SelectValue placeholder="Select role" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="buyer">Buyer</SelectItem>
                     <SelectItem value="seller">Seller</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="support">Support</SelectItem>
+                    <SelectItem value="agent">Agent</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] text-slate-400">
+                  Promote/demote agents from the{" "}
+                  <Link href="/agents" className="text-blue-600 font-semibold underline underline-offset-2">Agents</Link>{" "}
+                  page (not here).
+                </p>
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => { setEditModalOpen(false); clearSelectedUser(); }}>Cancel</Button>

@@ -1,15 +1,15 @@
 // src/store/useAdminProductsStore.ts
 import { create } from "zustand";
 import { AdminProductListItem as ProductListItem } from "../schemas/productSchema";
-import { fetchAdminProducts, updateAdminProductStatus, approveAdminProduct, deleteAdminProduct } from "../services/productService";
+import { fetchAdminProducts, updateAdminProductStatus, deleteAdminProduct } from "../services/productService";
 
 interface AdminProductsStore {
   products: ProductListItem[];
   loading: boolean;
   error: string | null;
+  lastStatus?: string;
   fetchProducts: (getToken: () => Promise<string | null>, status?: string) => Promise<void>;
   updateProductStatus: (getToken: () => Promise<string | null>, id: number, status: string) => Promise<void>;
-  approveProductAction: (getToken: () => Promise<string | null>, id: number) => Promise<void>;
   deleteProductAction: (getToken: () => Promise<string | null>, id: number) => Promise<void>;
 }
 
@@ -17,8 +17,9 @@ export const useAdminProductsStore = create<AdminProductsStore>((set, get) => ({
   products: [],
   loading: false,
   error: null,
+  lastStatus: undefined,
   fetchProducts: async (getToken, status) => {
-    set({ loading: true, error: null });
+    set({ loading: true, error: null, lastStatus: status });
     try {
       const token = await getToken();
       if (!token) throw new Error("No token provided");
@@ -34,34 +35,25 @@ export const useAdminProductsStore = create<AdminProductsStore>((set, get) => ({
   updateProductStatus: async (getToken, id, status) => {
     try {
       const token = await getToken();
-      if (!token) return;
-      console.log(`[Store] Updating status of product ${id} to ${status}`);
+      if (!token) throw new Error("No token provided");
       await updateAdminProductStatus(token, id, status);
-      await get().fetchProducts(getToken);
+      await get().fetchProducts(getToken, get().lastStatus);
     } catch (err: any) {
       console.error("[Store] Failed to update product status", err);
-    }
-  },
-  approveProductAction: async (getToken, id) => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-      console.log(`[Store] Approving product ${id}`);
-      await approveAdminProduct(token, id);
-      await get().fetchProducts(getToken);
-    } catch (err: any) {
-      console.error("[Store] Failed to approve product", err);
+      set({ error: err.message || "Failed to update product status" });
+      throw err;
     }
   },
   deleteProductAction: async (getToken, id) => {
     try {
       const token = await getToken();
-      if (!token) return;
-      console.log(`[Store] Deleting product ${id}`);
+      if (!token) throw new Error("No token provided");
       await deleteAdminProduct(token, id);
-      await get().fetchProducts(getToken);
+      await get().fetchProducts(getToken, get().lastStatus);
     } catch (err: any) {
       console.error("[Store] Failed to delete product", err);
+      set({ error: err.message || "Failed to delete product" });
+      throw err;
     }
   },
 }));

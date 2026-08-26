@@ -4,11 +4,16 @@ export const paymentItemSchema = z.object({
   id: z.number(),
   order_id: z.number().nullable().optional(),
   amount: z.number(),
+  currency: z.string().optional().default("INR"),
   status: z.string(),
-  payment_type: z.string(),
-  refund_status: z.string().optional().default("none"),
-  refund_amount: z.number().optional().default(0),
-});
+  provider: z.string().optional().default(""),
+  provider_ref: z.string().nullable().optional(),
+  razorpay_payment_id: z.string().nullable().optional(),
+  payment_type: z.string().optional(),
+  refund_status: z.string().optional(),
+  refund_amount: z.number().optional(),
+  created_at: z.string().optional(),
+}).passthrough();
 
 export const paymentListResponseSchema = z.object({
   payments: z.array(paymentItemSchema),
@@ -23,11 +28,14 @@ export const refundResponseSchema = z.object({
 export const transactionItemSchema = z.object({
   payment_id: z.number(),
   order_id: z.number().nullable().optional(),
+  buyer_id: z.string().optional().nullable(),
+  seller_id: z.string().optional().nullable(),
   amount: z.number(),
   status: z.string(),
-  payment_type: z.string(),
+  provider: z.string().optional(),
+  payment_type: z.string().optional(),
   created_at: z.string(),
-});
+}).passthrough();
 
 export const transactionReportResponseSchema = z.object({
   transactions: z.array(transactionItemSchema),
