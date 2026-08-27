@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import { isAdmin } from "@/lib/rbac";
+import RoleAccessBanner from "./RoleAccessBanner";
 import { useAdminUsersStore } from "../store/useAdminUsersStore";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
@@ -25,6 +26,7 @@ export default function UsersTab() {
   const { getToken } = useAuth();
   const backendUser = useUserStore((s) => s.backendUser);
   const canChangeRoles = isAdmin(backendUser?.role);
+  const canManageUsers = isAdmin(backendUser?.role);
   const {
     users, loading, fetchAdminUsers, suspendAdminUser, verifyAdminUser,
     selectedUser, detailsLoading, fetchUserDetail, updateUserDetails, clearSelectedUser,
@@ -109,11 +111,17 @@ export default function UsersTab() {
 
   return (
     <div className="space-y-6">
+      <RoleAccessBanner />
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Users</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Manage status, verification, and roles</p>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {canManageUsers
+              ? "Manage status, verification, and roles"
+              : "Search and view user profiles (read-only)"}
+          </p>
         </div>
         {/* Role Filter (July 2026) */}
         <Select value={roleFilter} onValueChange={(val) => setRoleFilter(val)}>
@@ -198,16 +206,20 @@ export default function UsersTab() {
                           <Button onClick={() => handleOpenView(user.id)} variant="ghost" className="h-8 px-2 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer" title="View Details">
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button onClick={() => handleOpenEdit(user.id)} variant="ghost" className="h-8 px-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer" title="Edit User">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          {user.kyc_status !== "verified" && (
-                            <Button onClick={() => handleToggleStatus(user.id, "verify")} variant="outline" className="h-8 px-3 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 font-bold text-xs cursor-pointer">Verify</Button>
-                          )}
-                          {!user.is_suspended ? (
-                            <Button onClick={() => handleToggleStatus(user.id, "suspend")} variant="outline" className="h-8 px-3 rounded-lg border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 font-bold text-xs cursor-pointer">Suspend</Button>
-                          ) : (
-                            <Button onClick={() => handleToggleStatus(user.id, "unsuspend")} variant="outline" className="h-8 px-3 rounded-lg border border-amber-200 text-amber-600 hover:bg-amber-50 font-bold text-xs cursor-pointer">Unsuspend</Button>
+                          {canManageUsers && (
+                            <>
+                              <Button onClick={() => handleOpenEdit(user.id)} variant="ghost" className="h-8 px-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer" title="Edit User">
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              {user.kyc_status !== "verified" && (
+                                <Button onClick={() => handleToggleStatus(user.id, "verify")} variant="outline" className="h-8 px-3 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 font-bold text-xs cursor-pointer">Verify</Button>
+                              )}
+                              {!user.is_suspended ? (
+                                <Button onClick={() => handleToggleStatus(user.id, "suspend")} variant="outline" className="h-8 px-3 rounded-lg border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 font-bold text-xs cursor-pointer">Suspend</Button>
+                              ) : (
+                                <Button onClick={() => handleToggleStatus(user.id, "unsuspend")} variant="outline" className="h-8 px-3 rounded-lg border border-amber-200 text-amber-600 hover:bg-amber-50 font-bold text-xs cursor-pointer">Unsuspend</Button>
+                              )}
+                            </>
                           )}
                         </div>
                       )}
@@ -391,9 +403,13 @@ export default function UsersTab() {
                 </Section>
               </div>
               <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-                <Button variant="outline" onClick={() => { setViewModalOpen(false); clearSelectedUser(); handleOpenEdit(selectedUser.id); }} className="h-8 px-4 text-xs font-bold border-blue-200 text-blue-600 hover:bg-blue-50 cursor-pointer">
-                  <Edit className="w-3.5 h-3.5 mr-1.5" />Edit User
-                </Button>
+                {canManageUsers ? (
+                  <Button variant="outline" onClick={() => { setViewModalOpen(false); clearSelectedUser(); handleOpenEdit(selectedUser.id); }} className="h-8 px-4 text-xs font-bold border-blue-200 text-blue-600 hover:bg-blue-50 cursor-pointer">
+                    <Edit className="w-3.5 h-3.5 mr-1.5" />Edit User
+                  </Button>
+                ) : (
+                  <span className="text-[11px] text-slate-400">View only — contact an admin for account changes.</span>
+                )}
                 <Button variant="ghost" onClick={() => { setViewModalOpen(false); clearSelectedUser(); }} className="h-8 px-4 text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Close</Button>
               </div>
             </>

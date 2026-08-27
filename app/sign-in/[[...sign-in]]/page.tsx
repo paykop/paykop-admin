@@ -16,7 +16,7 @@ import { requestAdminOtp, verifyAdminOtp, logoutAdmin } from "@/services/authSer
 import { useUserStore } from "@/store/useUserStore";
 import { getAccessToken, clearTokens } from "@/lib/api/client";
 import { toast } from "@/components/ui/toast";
-import { isStaff } from "@/lib/rbac";
+import { isStaff, getDefaultLandingPath } from "@/lib/rbac";
 import { getErrorMessage } from "@/lib/errors";
 
 const emptySubscribe = () => () => {};
@@ -38,7 +38,7 @@ export default function SignInPage() {
   // Check if already logged in — skip re-fetch when store already has a staff user
   useEffect(() => {
     if (backendUser && isStaff(backendUser.role)) {
-      router.replace("/");
+      router.replace(getDefaultLandingPath(backendUser.role));
       return;
     }
 
@@ -49,7 +49,7 @@ export default function SignInPage() {
     fetchProfile().then((user) => {
       if (cancelled) return;
       if (user && isStaff(user.role)) {
-        router.replace("/");
+        router.replace(getDefaultLandingPath(user.role));
         return;
       }
       clearBackendUser();
@@ -159,7 +159,7 @@ export default function SignInPage() {
       toast.success(
         user.role === "support" ? "Welcome back (Support)!" : "Welcome back!"
       );
-      router.push("/");
+      router.push(getDefaultLandingPath(user.role));
     } catch (err: unknown) {
       console.error("OTP verification failed:", err);
       setError(getErrorMessage(err, "Invalid or expired security code. Please try again."));

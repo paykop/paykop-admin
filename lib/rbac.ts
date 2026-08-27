@@ -3,8 +3,27 @@ export const STAFF_ROLES = ["admin", "support"] as const;
 
 export type StaffRole = (typeof STAFF_ROLES)[number];
 
+/** Routes accessible to support staff (allowlist). */
+export const SUPPORT_ROUTES = ["/tickets", "/users", "/kyc"] as const;
+
+export type SupportRoute = (typeof SUPPORT_ROUTES)[number];
+
 /** Routes that only administrators may open (page-level guard). */
-export const ADMIN_ONLY_ROUTES = ["/categories", "/banners", "/support"] as const;
+export const ADMIN_ONLY_ROUTES = [
+  "/",
+  "/categories",
+  "/banners",
+  "/support",
+  "/agents",
+  "/campaigns",
+  "/blood",
+  "/service-categories",
+  "/subscriptions",
+  "/products",
+  "/services",
+  "/payments",
+  "/logs",
+] as const;
 
 export type AdminOnlyRoute = (typeof ADMIN_ONLY_ROUTES)[number];
 
@@ -17,8 +36,28 @@ export function isAdmin(role: string | null | undefined): boolean {
   return role === "admin";
 }
 
+export function isSupport(role: string | null | undefined): boolean {
+  return role === "support";
+}
+
 export function isAdminOnlyRoute(pathname: string): boolean {
   return ADMIN_ONLY_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
+}
+
+export function canAccessRoute(
+  role: string | null | undefined,
+  pathname: string
+): boolean {
+  if (!isStaff(role)) return false;
+  if (isAdmin(role)) return true;
+  return SUPPORT_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+}
+
+export function getDefaultLandingPath(role: string | null | undefined): string {
+  if (isSupport(role)) return "/tickets";
+  return "/";
 }

@@ -89,6 +89,7 @@ export default function SupportTab() {
   };
 
   const handleRevoke = async (id: string) => {
+    if (!canManage) return;
     if (!confirm("Revoke support role and demote to buyer?")) return;
     setProcessingId(id);
     try {
@@ -114,16 +115,18 @@ export default function SupportTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Support Staff</h2>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Staff Management</h2>
           <p className="text-sm text-slate-500 mt-0.5">Provision and revoke support team accounts</p>
         </div>
-        <Button
-          onClick={handleOpenCreate}
-          className="h-9 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-bold text-xs cursor-pointer"
-        >
-          <Plus className="w-4 h-4 mr-1.5" />
-          Add Support
-        </Button>
+        {canManage && (
+          <Button
+            onClick={handleOpenCreate}
+            className="h-9 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-bold text-xs cursor-pointer"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            Add Support
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -175,7 +178,7 @@ export default function SupportTab() {
                         <Button
                           onClick={() => handleRevoke(member.id)}
                           variant="outline"
-                          disabled={processingId === member.id}
+                          disabled={!canManage || processingId === member.id}
                           className="h-8 px-3 rounded-lg border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 font-bold text-xs cursor-pointer"
                         >
                           {processingId === member.id ? (
@@ -219,13 +222,15 @@ export default function SupportTab() {
               <p><span className="text-slate-400 text-xs font-bold uppercase">Email</span><br />{selected.email || "—"}</p>
               <p><span className="text-slate-400 text-xs font-bold uppercase">Phone</span><br />{selected.phone || "—"}</p>
               <p><span className="text-slate-400 text-xs font-bold uppercase">Role</span><br />{selected.role}</p>
-              <Button
-                onClick={() => handleRevoke(selected.id)}
-                variant="outline"
-                className="w-full mt-2 border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs cursor-pointer"
-              >
-                Revoke Support Role
-              </Button>
+              {canManage && (
+                <Button
+                  onClick={() => handleRevoke(selected.id)}
+                  variant="outline"
+                  className="w-full mt-2 border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs cursor-pointer"
+                >
+                  Revoke Support Role
+                </Button>
+              )}
             </div>
           )}
         </DialogContent>

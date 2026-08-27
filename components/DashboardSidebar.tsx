@@ -25,9 +25,10 @@ import {
   Image as ImageIcon,
   ShieldCheck,
   X,
+  Ticket,
   type LucideIcon,
 } from "lucide-react";
-import { isAdmin, isAdminOnlyRoute } from "@/lib/rbac";
+import { canAccessRoute } from "@/lib/rbac";
 
 interface DashboardSidebarProps {
   mobileOpen?: boolean;
@@ -38,17 +39,18 @@ export default function DashboardSidebar({ mobileOpen = false, onClose }: Dashbo
   const pathname = usePathname();
   const { logout } = useAuth();
   const { backendUser } = useUserStore();
-  const canManageStaff = isAdmin(backendUser?.role);
+  const role = backendUser?.role;
 
   const navItems: { id: string; label: string; icon: LucideIcon; href: string; badge?: number }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard, href: "/" },
+    { id: "tickets", label: "Support Tickets", icon: Ticket, href: "/tickets" },
     { id: "products", label: "Products", icon: Package, href: "/products" },
     { id: "categories", label: "Product Categories", icon: FolderTree, href: "/categories" },
     { id: "banners", label: "Banners", icon: ImageIcon, href: "/banners" },
     { id: "users", label: "Users", icon: Users, href: "/users" },
     { id: "agents", label: "Agents", icon: UserCog, href: "/agents" },
     { id: "kyc", label: "KYC Submissions", icon: ShieldCheck, href: "/kyc" },
-    { id: "support", label: "Support Staff", icon: Headset, href: "/support" },
+    { id: "support", label: "Staff Management", icon: Headset, href: "/support" },
     { id: "payments", label: "Payments", icon: CreditCard, href: "/payments" },
     { id: "subscriptions", label: "Subscriptions", icon: Layers, href: "/subscriptions" },
     { id: "campaigns", label: "Campaigns", icon: HeartHandshake, href: "/campaigns" },
@@ -58,9 +60,7 @@ export default function DashboardSidebar({ mobileOpen = false, onClose }: Dashbo
     { id: "logs", label: "System Logs", icon: Terminal, href: "/logs" },
   ];
 
-  const visibleNav = navItems.filter(
-    (item) => !isAdminOnlyRoute(item.href) || canManageStaff
-  );
+  const visibleNav = navItems.filter((item) => canAccessRoute(role, item.href));
   const dbName = backendUser?.first_name || backendUser?.last_name
     ? `${backendUser.first_name || ""} ${backendUser.last_name || ""}`.trim()
     : "";

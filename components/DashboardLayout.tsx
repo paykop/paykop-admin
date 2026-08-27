@@ -2,12 +2,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import DashboardSidebar from "./DashboardSidebar";
+import RequireRouteAccess from "./RequireRouteAccess";
 import { Loader2, ShieldAlert, Menu } from "lucide-react";
 import NotificationPopover from "./NotificationPopover";
+import { canAccessRoute, isSupport } from "@/lib/rbac";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -15,6 +17,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { backendUser, loading, error, fetchProfile } = useUserStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,6 +33,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       fetchProfile(getToken);
     }
   }, [isLoaded, isSignedIn, backendUser, error, loading, fetchProfile, getToken]);
+
+  useEffect(() => {
+    if (!backendUser) return;
+    if (pathname === "/" && isSupport(backendUser.role)) {
+      router.replace("/tickets");
+      return;
+    }
+    if (!canAccessRoute(backendUser.role, pathname)) {
+      router.replace("/unauthorized");
+    }
+  }, [backendUser, pathname, router]);
 
   if (isLoaded && !isSignedIn) {
     return (
@@ -99,7 +113,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         <div className="flex-1 p-4 md:p-8">
           <div className="max-w-6xl mx-auto w-full">
-            {children}
+            <RequireRouteAccess>{children}</RequireRouteAccess>
           </div>
         </div>
       </main>

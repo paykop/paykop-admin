@@ -10,6 +10,7 @@ import { Loader2, Eye, Check, X, ShieldCheck, FileText, ExternalLink } from "luc
 import { toast } from "./ui/toast";
 import { safeExternalUrl } from "@/lib/safeExternalUrl";
 import { getErrorMessage } from "../lib/errors";
+import RoleAccessBanner from "./RoleAccessBanner";
 
 const STATUS_FILTERS = ["all", "pending", "verified", "rejected", "draft"] as const;
 
@@ -96,6 +97,8 @@ export default function KycTab() {
 
   return (
     <div className="space-y-6">
+      <RoleAccessBanner />
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Seller KYC</h2>
