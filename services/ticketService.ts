@@ -1,8 +1,10 @@
 import { apiRequest } from "./apiService";
+import { mapStatusFilterToAPI, mapTicketFromAPI } from "@/lib/tickets/mapTicket";
 import {
-  ticketListResponseSchema,
-  ticketItemSchema,
-  ticketActionResponseSchema,
+  ticketListRawResponseSchema,
+  ticketDetailResponseSchema,
+  ticketStatusResponseSchema,
+  ticketMessageResponseSchema,
   TicketListResponse,
   TicketItem,
   TicketActionResponse,
@@ -21,22 +23,29 @@ export async function fetchTickets(
     page: page.toString(),
     limit: limit.toString(),
   };
-  if (status && status !== "all") params.status = status;
-  if (search?.trim()) params.search = search.trim();
+  const apiStatus = mapStatusFilterToAPI(status ?? "");
+  if (apiStatus) params.status = apiStatus;
+  if (search?.trim()) params.q = search.trim();
 
-  return apiRequest("/api/v1/admin/tickets", ticketListResponseSchema, {
+  const data = await apiRequest("/api/v1/admin/tickets", ticketListRawResponseSchema, {
     headers: { Authorization: `Bearer ${token}` },
     params,
   });
+
+  return {
+    tickets: data.tickets.map(mapTicketFromAPI),
+    total: data.total,
+  };
 }
 
 export async function fetchTicketDetail(
   token: string,
   id: number | string
 ): Promise<TicketItem> {
-  return apiRequest(`/api/v1/admin/tickets/${id}`, ticketItemSchema, {
+  const data = await apiRequest(`/api/v1/admin/tickets/${id}`, ticketDetailResponseSchema, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return mapTicketFromAPI(data.ticket);
 }
 
 export async function updateTicketStatus(
@@ -44,11 +53,12 @@ export async function updateTicketStatus(
   id: number | string,
   data: UpdateTicketStatusInput
 ): Promise<TicketItem> {
-  return apiRequest(`/api/v1/admin/tickets/${id}/status`, ticketItemSchema, {
+  await apiRequest(`/api/v1/admin/tickets/${id}/status`, ticketStatusResponseSchema, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });
+  return fetchTicketDetail(token, id);
 }
 
 export async function createTicketReply(
@@ -56,9 +66,10 @@ export async function createTicketReply(
   id: number | string,
   data: CreateTicketReplyInput
 ): Promise<TicketActionResponse> {
-  return apiRequest(`/api/v1/admin/tickets/${id}/replies`, ticketActionResponseSchema, {
+  await apiRequest(`/api/v1/admin/tickets/${id}/messages`, ticketMessageResponseSchema, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });
+  return { status: "ok" };
 }

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "./ui/toast";
 import { TICKET_STATUSES } from "../schemas/ticketSchema";
+import { formatTicketStatusLabel } from "@/lib/tickets/mapTicket";
 import { getErrorMessage } from "../lib/errors";
 
 export default function TicketsTab() {
@@ -60,7 +61,7 @@ export default function TicketsTab() {
     setProcessingId(id);
     try {
       await updateStatus(getToken, id, status);
-      toast.success(`Ticket marked as ${status}`);
+      toast.success(`Ticket marked as ${formatTicketStatusLabel(status)}`);
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, "Failed to update ticket status"));
     } finally {
@@ -86,7 +87,8 @@ export default function TicketsTab() {
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
       open: "bg-blue-50 text-blue-700 border-blue-200",
-      pending: "bg-amber-50 text-amber-700 border-amber-200",
+      in_progress: "bg-violet-50 text-violet-700 border-violet-200",
+      waiting_user: "bg-amber-50 text-amber-700 border-amber-200",
       resolved: "bg-emerald-50 text-emerald-700 border-emerald-200",
       closed: "bg-slate-100 text-slate-600 border-slate-200",
     };
@@ -137,7 +139,7 @@ export default function TicketsTab() {
               statusFilter === status ? "bg-blue-600 text-white" : ""
             }`}
           >
-            {status}
+            {status === "all" ? "All" : formatTicketStatusLabel(status)}
           </Button>
         ))}
       </div>
@@ -207,8 +209,8 @@ export default function TicketsTab() {
                       <div className="text-[11px] text-slate-400">{ticket.customer_email || ticket.customer_id || "—"}</div>
                     </TableCell>
                     <TableCell className="p-4">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold capitalize ${statusBadge(ticket.status)}`}>
-                        {ticket.status}
+                      <span className={`inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold ${statusBadge(ticket.status)}`}>
+                        {formatTicketStatusLabel(ticket.status)}
                       </span>
                     </TableCell>
                     <TableCell className="p-4">
@@ -276,8 +278,8 @@ export default function TicketsTab() {
                     </SelectTrigger>
                     <SelectContent>
                       {TICKET_STATUSES.map((s) => (
-                        <SelectItem key={s} value={s} className="capitalize">
-                          {s}
+                        <SelectItem key={s} value={s}>
+                          {formatTicketStatusLabel(s)}
                         </SelectItem>
                       ))}
                     </SelectContent>
