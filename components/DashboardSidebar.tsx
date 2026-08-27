@@ -27,7 +27,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { isAdmin } from "@/lib/rbac";
+import { isAdmin, isAdminOnlyRoute } from "@/lib/rbac";
 
 interface DashboardSidebarProps {
   mobileOpen?: boolean;
@@ -40,15 +40,15 @@ export default function DashboardSidebar({ mobileOpen = false, onClose }: Dashbo
   const { backendUser } = useUserStore();
   const canManageStaff = isAdmin(backendUser?.role);
 
-  const navItems: { id: string; label: string; icon: LucideIcon; href: string; badge?: number; adminOnly?: boolean }[] = [
+  const navItems: { id: string; label: string; icon: LucideIcon; href: string; badge?: number }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard, href: "/" },
     { id: "products", label: "Products", icon: Package, href: "/products" },
-    { id: "categories", label: "Product Categories", icon: FolderTree, href: "/categories", adminOnly: true },
-    { id: "banners", label: "Banners", icon: ImageIcon, href: "/banners", adminOnly: true },
+    { id: "categories", label: "Product Categories", icon: FolderTree, href: "/categories" },
+    { id: "banners", label: "Banners", icon: ImageIcon, href: "/banners" },
     { id: "users", label: "Users", icon: Users, href: "/users" },
     { id: "agents", label: "Agents", icon: UserCog, href: "/agents" },
     { id: "kyc", label: "KYC Submissions", icon: ShieldCheck, href: "/kyc" },
-    { id: "support", label: "Support Staff", icon: Headset, href: "/support", adminOnly: true },
+    { id: "support", label: "Support Staff", icon: Headset, href: "/support" },
     { id: "payments", label: "Payments", icon: CreditCard, href: "/payments" },
     { id: "subscriptions", label: "Subscriptions", icon: Layers, href: "/subscriptions" },
     { id: "campaigns", label: "Campaigns", icon: HeartHandshake, href: "/campaigns" },
@@ -58,7 +58,9 @@ export default function DashboardSidebar({ mobileOpen = false, onClose }: Dashbo
     { id: "logs", label: "System Logs", icon: Terminal, href: "/logs" },
   ];
 
-  const visibleNav = navItems.filter((item) => !item.adminOnly || canManageStaff);
+  const visibleNav = navItems.filter(
+    (item) => !isAdminOnlyRoute(item.href) || canManageStaff
+  );
   const dbName = backendUser?.first_name || backendUser?.last_name
     ? `${backendUser.first_name || ""} ${backendUser.last_name || ""}`.trim()
     : "";

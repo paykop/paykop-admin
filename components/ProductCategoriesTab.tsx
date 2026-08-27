@@ -58,19 +58,9 @@ export default function ProductCategoriesTab() {
   const rootCategories = displayCategories.filter((c) => !c.parent_id);
 
   useEffect(() => {
-    if (canManage) fetchCategories(getToken);
+    fetchCategories(getToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getToken, canManage]);
-
-  if (!canManage) {
-    return (
-      <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center">
-        <FolderTree className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-        <p className="text-slate-800 font-bold text-sm">Admin access required</p>
-        <p className="text-xs text-slate-400 mt-1">Product categories can only be managed by administrators.</p>
-      </div>
-    );
-  }
+  }, [getToken]);
 
   const openCreate = (parentId?: number) => {
     setEditingItem(null);

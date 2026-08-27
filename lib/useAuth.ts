@@ -8,9 +8,19 @@ import { logoutAdmin } from "../services/authService";
 
 const emptySubscribe = () => () => {};
 
+function subscribeToAuth(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("paykop-auth-change", onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+  return () => {
+    window.removeEventListener("paykop-auth-change", onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
+}
+
 export function useAuth() {
   const isLoaded = useSyncExternalStore(emptySubscribe, () => true, () => false);
-  const token = useSyncExternalStore(emptySubscribe, getAccessToken, () => null);
+  const token = useSyncExternalStore(subscribeToAuth, getAccessToken, () => null);
   const backendUser = useUserStore((state) => state.backendUser);
 
   const getToken = useCallback(async (): Promise<string | null> => {

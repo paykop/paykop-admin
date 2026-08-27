@@ -7,23 +7,18 @@ export const backendUserSchema = z.object({
   phone: z.string().optional().default(""),
   first_name: z.string().optional().default(""),
   last_name: z.string().optional().default(""),
-  role: z.string().optional().default("admin"),
+  role: z.string(),
   is_onboarded: z.boolean().optional().default(false),
   has_subscription: z.boolean().optional().default(false),
   profile_picture_url: z.string().optional().default(""),
   address: z.string().optional().default(""),
-});
+  auth_provider: z.string().optional(),
+  kyc_status: z.string().optional(),
+  is_seller_ready: z.boolean().optional(),
+  seller_ready_missing: z.array(z.string()).optional(),
+}).passthrough();
 
 export type BackendUser = z.infer<typeof backendUserSchema>;
-
-export const syncResponseSchema = z.object({
-  id: z.string(),
-  role: z.string(),
-  is_onboarded: z.boolean(),
-  has_subscription: z.boolean(),
-});
-
-export type SyncResponse = z.infer<typeof syncResponseSchema>;
 
 export const updateProfileSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -113,6 +108,11 @@ export const baseUserDetailsResponseSchema = z
     onboarded_by_agent_id: z.string().nullable().optional(),
     onboarded_at: z.string().nullable().optional(),
     active_assignment: activeAssignmentSummarySchema.nullable().optional(),
+    commercial_access_status: z.string().optional(),
+    commercial_expires_at: z.string().nullable().optional(),
+    onboarding_fee_paid_at: z.string().nullable().optional(),
+    is_seller_ready: z.boolean().optional(),
+    seller_ready_missing: z.array(z.string()).optional(),
   })
   .passthrough();
 

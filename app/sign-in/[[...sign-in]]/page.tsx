@@ -23,7 +23,7 @@ const emptySubscribe = () => () => {};
 
 export default function SignInPage() {
   const router = useRouter();
-  const { fetchProfile, backendUser } = useUserStore();
+  const { fetchProfile, backendUser, clearBackendUser } = useUserStore();
 
   const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
@@ -47,14 +47,17 @@ export default function SignInPage() {
 
     let cancelled = false;
     fetchProfile().then((user) => {
-      if (!cancelled && user && isStaff(user.role)) {
+      if (cancelled) return;
+      if (user && isStaff(user.role)) {
         router.replace("/");
+        return;
       }
+      clearBackendUser();
     });
     return () => {
       cancelled = true;
     };
-  }, [backendUser, fetchProfile, router]);
+  }, [backendUser, fetchProfile, clearBackendUser, router]);
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -153,7 +156,9 @@ export default function SignInPage() {
         return;
       }
 
-      toast.success("Welcome back!");
+      toast.success(
+        user.role === "support" ? "Welcome back (Support)!" : "Welcome back!"
+      );
       router.push("/");
     } catch (err: unknown) {
       console.error("OTP verification failed:", err);
@@ -234,7 +239,7 @@ export default function SignInPage() {
                   )}
                 </div>
                 <p className="text-[11px] text-slate-500">
-                  Enter your registered administrator email to receive a one-time verification code.
+                  Enter your registered admin or support staff email to receive a one-time verification code.
                 </p>
               </div>
 

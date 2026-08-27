@@ -3,11 +3,14 @@
 import React from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import SupportTab from "../../components/SupportTab";
+import RequireAdminPage from "../../components/RequireAdminPage";
 
 export default function SupportPage() {
   return (
     <DashboardLayout>
-      <SupportTab />
+      <RequireAdminPage>
+        <SupportTab />
+      </RequireAdminPage>
     </DashboardLayout>
   );
 }

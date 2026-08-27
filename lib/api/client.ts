@@ -41,6 +41,7 @@ export function setTokens(accessToken: string, refreshToken: string, expiresIn?:
   const maxAge = expiresIn ? `max-age=${expiresIn}` : "max-age=86400";
   document.cookie = `access_token=${encodeURIComponent(accessToken)}; path=/; SameSite=Lax; ${maxAge}`;
   document.cookie = `refresh_token=${encodeURIComponent(refreshToken)}; path=/; SameSite=Lax; max-age=604800`;
+  window.dispatchEvent(new Event("paykop-auth-change"));
 }
 
 export function clearTokens() {
@@ -49,6 +50,7 @@ export function clearTokens() {
   localStorage.removeItem("refresh_token");
   document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
   document.cookie = "refresh_token=; path=/; max-age=0; SameSite=Lax";
+  window.dispatchEvent(new Event("paykop-auth-change"));
 }
 
 export function handleLogout() {

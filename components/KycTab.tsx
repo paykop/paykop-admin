@@ -99,7 +99,9 @@ export default function KycTab() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Seller KYC</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Review seller verification submissions and documents</p>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Review submissions after sellers submit for review. Draft uploads appear under the Draft filter until they call submit in the app.
+          </p>
         </div>
       </div>
 
@@ -132,6 +134,9 @@ export default function KycTab() {
           <div className="p-10 text-center flex flex-col items-center gap-2">
             <ShieldCheck className="w-10 h-10 text-slate-300" />
             <p className="text-slate-800 font-bold text-sm">No KYC submissions</p>
+            <p className="text-slate-500 text-xs max-w-sm">
+              Sellers must submit after uploading documents before approve/reject is available. Check the Draft filter if uploads may still be in progress.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -160,15 +165,20 @@ export default function KycTab() {
                       <div className="font-mono text-[10px] text-slate-400">{s.pan || "—"}</div>
                     </TableCell>
                     <TableCell className="p-4">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold capitalize ${statusBadge(s.status)}`}>
-                        {s.status}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`inline-flex w-fit px-2 py-0.5 rounded-full border text-[10px] font-bold capitalize ${statusBadge(s.status)}`}>
+                          {s.status}
+                        </span>
+                        {s.status === "draft" && (
+                          <span className="text-[10px] text-slate-400">Not submitted by seller yet</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="p-4 pr-6 text-right">
                       {processingId === s.id ? (
                         <Loader2 className="w-4 h-4 animate-spin inline-block text-blue-500" />
                       ) : (
-                        <div className="flex justify-end gap-2 flex-wrap">
+                        <div className="flex justify-end gap-2 flex-wrap items-center">
                           <Button
                             onClick={() => handleOpen(s.id)}
                             variant="outline"
@@ -193,6 +203,9 @@ export default function KycTab() {
                                 <X className="w-3 h-3 mr-1" /> Reject
                               </Button>
                             </>
+                          )}
+                          {s.status === "draft" && (
+                            <span className="text-[10px] text-slate-400 self-center">Awaiting submit</span>
                           )}
                         </div>
                       )}
@@ -232,6 +245,11 @@ export default function KycTab() {
                   <span className={`inline-flex mt-1 px-2 py-0.5 rounded-full border text-[10px] font-bold capitalize ${statusBadge(selected.status)}`}>
                     {selected.status}
                   </span>
+                  {selected.status === "draft" && (
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Documents uploaded but not submitted for review. Ask the seller to tap Submit in the app, then approve here when status becomes pending.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p className="text-slate-400 font-bold uppercase text-[10px]">GSTIN</p>

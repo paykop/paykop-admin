@@ -40,7 +40,7 @@ export const useAdminKycStore = create<AdminKycStore>((set, get) => ({
   detailsLoading: false,
   selected: null,
   error: null,
-  statusFilter: "pending",
+  statusFilter: "all",
 
   setStatusFilter: (status) => set({ statusFilter: status }),
 

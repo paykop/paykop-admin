@@ -20,10 +20,11 @@ export const dashboardResponseSchema = z.object({
 /** GET /admin/metrics — operational diagnostics */
 export const adminMetricsSchema = z
   .object({
-    clerk_error_count: z.number().optional().default(0),
+    auth_error_count: z.number().optional().default(0),
     geocode_call_count: z.number().optional().default(0),
     geocode_cache_hit_count: z.number().optional().default(0),
     geocode_cache_hit_rate: z.string().optional().default("—"),
+    chat_persistence_error_count: z.number().optional().default(0),
     uptime_seconds: z.number().optional().default(0),
     uptime_human: z.string().optional().default("—"),
   })

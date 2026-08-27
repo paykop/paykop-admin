@@ -152,7 +152,7 @@ export default function OverviewTab() {
             ) : !metricsData ? (
               <p className="text-sm text-slate-400 py-8 text-center">Diagnostics unavailable.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
                   <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Uptime</p>
                   <p className="text-lg font-bold text-slate-900 mt-1">{metricsData.uptime_human || "—"}</p>
@@ -165,10 +165,15 @@ export default function OverviewTab() {
                     {metricsData.geocode_cache_hit_count}/{metricsData.geocode_call_count} hits
                   </p>
                 </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4 col-span-2 sm:col-span-1">
-                  <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Clerk errors</p>
-                  <p className="text-lg font-bold text-slate-900 mt-1">{metricsData.clerk_error_count ?? 0}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Auth provider faults</p>
+                <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                  <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Auth errors</p>
+                  <p className="text-lg font-bold text-slate-900 mt-1">{metricsData.auth_error_count ?? 0}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Provider faults</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                  <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Chat persistence</p>
+                  <p className="text-lg font-bold text-slate-900 mt-1">{metricsData.chat_persistence_error_count ?? 0}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Write failures</p>
                 </div>
               </div>
             )}

@@ -4,7 +4,6 @@ import { BackendUser, PermissionsResponse } from "../schemas/userSchema";
 import {
   fetchUserProfile,
   fetchUserPermissions,
-  syncUser,
 } from "../services/userService";
 import { getAccessToken, clearTokens } from "../lib/api/client";
 import { isStaff } from "../lib/rbac";
@@ -25,6 +24,37 @@ interface UserState {
 
 /** Shared in-flight profile fetch so concurrent callers (sign-in + layout + Strict Mode) share one request. */
 let fetchProfileInFlight: Promise<BackendUser | null> | null = null;
+
+const EXPECTED_AUTH_CODES = new Set([
+  "USER_NOT_FOUND",
+  "INVALID_TOKEN",
+  "TOKEN_EXPIRED",
+]);
+
+function isExpectedAuthFailure(err: unknown): boolean {
+  if (!(err instanceof ApiError) || err.status !== 401) return false;
+
+  const info = err.info as { code?: string; error?: string; message?: string } | undefined;
+  const code = (info?.code || "").toUpperCase();
+  if (EXPECTED_AUTH_CODES.has(code)) return true;
+
+  const errorKey = (info?.error || "").toLowerCase();
+  if (
+    errorKey === "user_not_found" ||
+    errorKey === "invalid_token" ||
+    errorKey === "token_expired"
+  ) {
+    return true;
+  }
+
+  const msg = (err.message || info?.message || "").toLowerCase();
+  return (
+    msg.includes("user not found") ||
+    msg.includes("invalid or malformed access token") ||
+    msg.includes("token expired") ||
+    msg.includes("access token has expired")
+  );
+}
 
 export const useUserStore = create<UserState>((set, get) => ({
   backendUser: null,
@@ -47,27 +77,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           throw new Error("No authentication token found. Please sign in again.");
         }
 
-        let response: BackendUser;
-        try {
-          response = await fetchUserProfile(token);
-        } catch (err: unknown) {
-          const isUserNotFound =
-            (err instanceof ApiError &&
-              (err.status === 401 || err.status === 404 || err.status === 400)) ||
-            getErrorMessage(err).toLowerCase().includes("user not found");
-
-          if (isUserNotFound) {
-            const syncRes = await syncUser(token);
-            if (isStaff(syncRes.role)) {
-              response = await fetchUserProfile(token);
-            } else {
-              clearTokens();
-              throw new Error("Access Denied: Only admin or support staff accounts can access this portal.");
-            }
-          } else {
-            throw err;
-          }
-        }
+        const response = await fetchUserProfile(token);
 
         if (!isStaff(response.role)) {
           clearTokens();
@@ -95,7 +105,16 @@ export const useUserStore = create<UserState>((set, get) => ({
 
         return response;
       } catch (err: unknown) {
+        if (isExpectedAuthFailure(err)) {
+          clearTokens();
+          set({ backendUser: null, permissions: null, error: null });
+          return null;
+        }
+
         console.error("Failed to fetch backend profile:", err);
+        if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
+          clearTokens();
+        }
         const errorMsg =
           err instanceof ApiError && err.status === 401
             ? "Access Denied: This administrator account does not exist in the database."

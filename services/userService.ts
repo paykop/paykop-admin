@@ -3,7 +3,6 @@ import { z } from "zod";
 import { apiRequest } from "./apiService";
 import {
   backendUserSchema,
-  syncResponseSchema,
   permissionsResponseSchema,
   actionResponseSchema,
   UpdateProfileInput,
@@ -13,18 +12,6 @@ import {
   UserDetailsResponse,
   UpdateUserRequest,
 } from "../schemas/userSchema";
-
-/**
- * Sync user profile to database
- */
-export async function syncUser(token: string) {
-  return apiRequest("/api/v1/auth/sync", syncResponseSchema, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-}
 
 /**
  * Fetch local user profile details from Neon DB

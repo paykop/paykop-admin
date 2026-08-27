@@ -40,19 +40,9 @@ export default function SupportTab() {
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (canManage) fetchSupport(getToken);
+    fetchSupport(getToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getToken, canManage]);
-
-  if (!canManage) {
-    return (
-      <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center">
-        <Headset className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-        <p className="text-slate-800 font-bold text-sm">Admin access required</p>
-        <p className="text-xs text-slate-400 mt-1">Only administrators can manage support staff.</p>
-      </div>
-    );
-  }
+  }, [getToken]);
 
   const nonSupportUsers = (pickerUsers || []).filter((u) => {
     const role = (u.role || "").toLowerCase();

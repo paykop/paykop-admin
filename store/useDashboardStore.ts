@@ -1,8 +1,6 @@
 import { create } from "zustand";
 import { DashboardResponse } from "../schemas/dashboardSchema";
 import { fetchDashboardStats } from "../services/dashboardService";
-import { syncUser } from "../services/userService";
-import { ApiError } from "../services/apiService";
 import { getErrorMessage } from "../lib/errors";
 
 interface DashboardState {
@@ -25,25 +23,6 @@ export const useDashboardStore = create<DashboardState>((set) => ({
       set({ data: stats, error: null });
     } catch (err: unknown) {
       console.error("Failed to fetch dashboard stats", err);
-
-      const isUserNotFound =
-        (err instanceof ApiError && (err.status === 401 || err.status === 404 || err.status === 400)) ||
-        getErrorMessage(err).toLowerCase().includes("user not found");
-
-      if (isUserNotFound) {
-        try {
-          const syncToken = await getToken();
-          if (syncToken) {
-            await syncUser(syncToken);
-            const retryStats = await fetchDashboardStats(syncToken);
-            set({ data: retryStats, error: null });
-            return;
-          }
-        } catch (retryErr) {
-          console.error("[DashboardStore] Retry after sync failed:", retryErr);
-        }
-      }
-
       set({ error: getErrorMessage(err, "Failed to fetch dashboard stats") });
     } finally {
       set({ loading: false });
