@@ -11,14 +11,10 @@ import {
 } from "../schemas/bannerSchema";
 
 /**
- * Fetch all homepage banners (Admin)
+ * Fetch all homepage banners (public list includes inactive when only_active=false)
  */
-export async function fetchAdminBanners(token: string): Promise<BannerListResponse> {
-  return apiRequest("/api/v1/admin/banners", bannerListResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export async function fetchAdminBanners(_token: string): Promise<BannerListResponse> {
+  return apiRequest("/api/v1/banners?only_active=false", bannerListResponseSchema);
 }
 
 /**

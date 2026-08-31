@@ -25,6 +25,7 @@ import {
   Image as ImageIcon,
   ShieldCheck,
   X,
+  Store,
   Ticket,
   type LucideIcon,
 } from "lucide-react";
@@ -52,6 +53,7 @@ export default function DashboardSidebar({ mobileOpen = false, onClose }: Dashbo
     { id: "kyc", label: "KYC Submissions", icon: ShieldCheck, href: "/kyc" },
     { id: "support", label: "Staff Management", icon: Headset, href: "/support" },
     { id: "payments", label: "Payments", icon: CreditCard, href: "/payments" },
+    { id: "commerce", label: "Commerce", icon: Store, href: "/commerce" },
     { id: "subscriptions", label: "Subscriptions", icon: Layers, href: "/subscriptions" },
     { id: "campaigns", label: "Campaigns", icon: HeartHandshake, href: "/campaigns" },
     { id: "blood", label: "Blood Requests", icon: Droplet, href: "/blood" },

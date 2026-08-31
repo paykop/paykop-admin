@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 const publicPaths = ['/sign-in', '/login', '/unauthorized'];
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes and static assets
@@ -35,4 +35,4 @@ export const config = {
   ],
 };
 
-export default proxy;
+export default middleware;

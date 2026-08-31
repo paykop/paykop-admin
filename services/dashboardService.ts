@@ -19,17 +19,6 @@ export async function fetchDashboardStats(token: string): Promise<DashboardRespo
 }
 
 /**
- * Fetch analytics statistics via /admin/analytics (July 2026 alias — identical response)
- */
-export async function fetchAnalyticsStats(token: string): Promise<DashboardResponse> {
-  return apiRequest("/api/v1/admin/analytics", dashboardResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-}
-
-/**
  * Fetch operational diagnostics via /admin/metrics
  */
 export async function fetchAdminMetrics(token: string): Promise<AdminMetrics> {

@@ -22,6 +22,7 @@ export const ADMIN_ONLY_ROUTES = [
   "/products",
   "/services",
   "/payments",
+  "/commerce",
   "/logs",
 ] as const;
 

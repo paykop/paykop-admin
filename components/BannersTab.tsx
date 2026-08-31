@@ -11,10 +11,25 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Loader2, Plus, Edit, Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "./ui/toast";
-import { BannerItem } from "../schemas/bannerSchema";
-import { getErrorMessage } from "../lib/errors";
+import { BannerItem, bannerTypeSchema } from "../schemas/bannerSchema";
 
-const EMPTY = { title: "", image_url: "", type: "home", link_id: "", is_active: true };
+type BannerFormState = {
+  title: string;
+  image_url: string;
+  type: z.infer<typeof bannerTypeSchema>;
+  link_id: string;
+  is_active: boolean;
+};
+import { getErrorMessage } from "../lib/errors";
+import { z } from "zod";
+
+const EMPTY: BannerFormState = {
+  title: "",
+  image_url: "",
+  type: "product",
+  link_id: "",
+  is_active: true,
+};
 
 export default function BannersTab() {
   const { getToken } = useAuth();
@@ -62,7 +77,7 @@ export default function BannersTab() {
       const payload = {
         title: form.title.trim() || undefined,
         image_url: form.image_url.trim(),
-        type: form.type.trim() || "home",
+        type: form.type,
         link_id: form.link_id.trim() || undefined,
         is_active: form.is_active,
       };
@@ -242,11 +257,20 @@ export default function BannersTab() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="block font-semibold mb-1 text-slate-500 uppercase tracking-wider">Type</label>
-                <input
+                <select
                   value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      type: e.target.value as BannerFormState["type"],
+                    })
+                  }
+                  className="w-full px-3 py-2 border rounded-lg bg-white"
+                >
+                  <option value="product">Product</option>
+                  <option value="service">Service</option>
+                  <option value="donation">Donation</option>
+                </select>
               </div>
               <div>
                 <label className="block font-semibold mb-1 text-slate-500 uppercase tracking-wider">Link ID</label>

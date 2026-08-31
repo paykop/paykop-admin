@@ -1,49 +1,9 @@
 import { apiRequest } from "./apiService";
 import {
-  productListResponseSchema,
-  productResponseSchema,
-  feedResponseSchema,
   adminProductListResponseSchema,
   AdminProductListResponse,
 } from "../schemas/productSchema";
 import { actionResponseSchema } from "../schemas/userSchema";
-
-/**
- * Fetch list of approved products from the backend (paginated)
- */
-export async function fetchProducts(token: string, page = 1, limit = 10) {
-  return apiRequest("/api/v1/products", productListResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    params: {
-      page: page.toString(),
-      limit: limit.toString(),
-    },
-  });
-}
-
-/**
- * Fetch product detail by ID
- */
-export async function fetchProductDetail(token: string, id: number) {
-  return apiRequest(`/api/v1/products/${id}`, productResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-}
-
-/**
- * Fetch home feed containing featured products and recommendation placeholders
- */
-export async function fetchHomeFeed(token: string) {
-  return apiRequest("/api/v1/home", feedResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-}
 
 // ==========================================
 // ADMIN PRODUCT METHODS
