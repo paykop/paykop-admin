@@ -1,30 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Paykop Admin
 
-## Getting Started
+Secure admin dashboard for Paykop, built with Next.js 16 and a BFF auth layer.
 
-First, run the development server:
+## Prerequisites
+
+- Node.js 20+
+- Paykop Go API running locally or in staging
+
+## Local setup
 
 ```bash
+cp .env.example .env.local
+npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Scope | Description |
+|----------|-------|-------------|
+| `API_URL` | Server only | Go API base URL (e.g. `http://localhost:8080`) |
+| `NEXT_PUBLIC_ALLOWED_IMAGE_HOSTS` | Client | Comma-separated CDN hostnames for remote images |
 
-## Learn More
+Browser requests never call the Go API directly. All admin API traffic goes through `/api/proxy` with HttpOnly session cookies.
 
-To learn more about Next.js, take a look at the following resources:
+## Auth architecture
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+Browser → /api/auth/* (OTP, session, logout)
+Browser → /api/proxy/* → Go API (Bearer attached server-side)
+Middleware → checks HttpOnly access/refresh cookies
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Tokens are stored in HttpOnly cookies only — never in `localStorage`.
 
-## Deploy on Vercel
+## RBAC roles
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Role | Access |
+|------|--------|
+| `admin` | All dashboard routes |
+| `support` | `/tickets`, `/users`, `/kyc` only |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | ESLint |
+| `npm run test:e2e` | Playwright smoke tests |
+
+## Deploy checklist
+
+- [ ] Set `API_URL` to production Go API
+- [ ] HTTPS enabled (required for `Secure` cookies)
+- [ ] Confirm Go exposes `/api/v1/admin/auth/logout` for server-side refresh revocation
+- [ ] Set `NEXT_PUBLIC_ALLOWED_IMAGE_HOSTS` to your CDN domains
+- [ ] Run `npm run build` and `npm run test:e2e` before deploy
+
+## CI
+
+GitHub Actions runs `npm ci`, `npm run lint`, and `npm run build` on every push and pull request.

@@ -28,10 +28,7 @@ export async function fetchBloodRequests(
     params.status = status;
   }
 
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  return apiRequest("/api/v1/admin/blood", bloodRequestListResponseSchema, {
+  const headers: Record<string, string> = {};return apiRequest("/api/v1/admin/blood", bloodRequestListResponseSchema, {
     headers,
     params,
   });
@@ -45,10 +42,7 @@ export async function updateBloodRequestStatus(
   id: string | number,
   status: string
 ): Promise<BloodRequestItem> {
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  return apiRequest(`/api/v1/admin/blood/${id}/status`, bloodRequestItemSchema, {
+  const headers: Record<string, string> = {};return apiRequest(`/api/v1/admin/blood/${id}/status`, bloodRequestItemSchema, {
     method: "PUT",
     headers,
     body: JSON.stringify({ status }),
@@ -63,10 +57,7 @@ export async function updateBloodRequest(
   id: string | number,
   data: Record<string, unknown>
 ): Promise<BloodRequestItem> {
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  return apiRequest(`/api/v1/admin/blood/${id}`, bloodRequestItemSchema, {
+  const headers: Record<string, string> = {};return apiRequest(`/api/v1/admin/blood/${id}`, bloodRequestItemSchema, {
     method: "PUT",
     headers,
     body: JSON.stringify(data),
@@ -80,10 +71,7 @@ export async function deleteBloodRequest(
   token: string | undefined,
   id: string | number
 ): Promise<{ message: string }> {
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  return apiRequest(
+  const headers: Record<string, string> = {};return apiRequest(
     `/api/v1/admin/blood/${id}`,
     z.object({ message: z.string() }),
     {
@@ -111,10 +99,7 @@ export async function fetchStandingDonors(
     params.only_available = filters.only_available ? "true" : "false";
   }
 
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  return apiRequest("/api/v1/donations/blood/donors", donorListResponseSchema, {
+  const headers: Record<string, string> = {};return apiRequest("/api/v1/donations/blood/donors", donorListResponseSchema, {
     headers,
     params,
   });
@@ -127,10 +112,7 @@ export async function fetchMatchingDonors(
   token: string | undefined,
   requestId: string | number
 ): Promise<MatchingDonorsResponse> {
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  return apiRequest(`/api/v1/donations/blood/${requestId}/matching-donors`, matchingDonorsResponseSchema, {
+  const headers: Record<string, string> = {};return apiRequest(`/api/v1/donations/blood/${requestId}/matching-donors`, matchingDonorsResponseSchema, {
     headers,
   });
 }

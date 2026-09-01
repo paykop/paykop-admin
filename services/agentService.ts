@@ -22,7 +22,6 @@ import { userDetailsResponseSchema, UserDetailsResponse } from "../schemas/userS
  */
 export async function fetchAgents(token: string, page = 1, limit = 50): Promise<AgentListResponse> {
   return apiRequest("/api/v1/admin/agents", agentListResponseSchema, {
-    headers: { Authorization: `Bearer ${token}` },
     params: { page: page.toString(), limit: limit.toString() },
   });
 }
@@ -32,7 +31,6 @@ export async function fetchAgents(token: string, page = 1, limit = 50): Promise<
  */
 export async function getAgent(token: string, id: string): Promise<AgentDetailResponse> {
   return apiRequest(`/api/v1/admin/agents/${id}`, agentDetailResponseSchema, {
-    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -41,7 +39,6 @@ export async function getAgent(token: string, id: string): Promise<AgentDetailRe
  */
 export async function listAgentAssignments(token: string, id: string): Promise<AssignmentsListResponse> {
   return apiRequest(`/api/v1/admin/agents/${id}/assignments`, assignmentsListResponseSchema, {
-    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -52,7 +49,6 @@ export async function createAgent(token: string, data: CreateAgentRequest): Prom
   const parsed = createAgentRequestSchema.parse(data);
   return apiRequest("/api/v1/admin/agents", userDetailsResponseSchema, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(parsed),
   });
 }
@@ -63,7 +59,6 @@ export async function createAgent(token: string, data: CreateAgentRequest): Prom
 export async function revokeAgentRole(token: string, id: string): Promise<AgentActionResponse> {
   return apiRequest(`/api/v1/admin/agents/${id}/revoke-role`, agentActionResponseSchema, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -77,7 +72,6 @@ export async function assignSellerToAgent(
   const parsed = createAssignmentRequestSchema.parse(data);
   return apiRequest("/api/v1/admin/seller-agent-assignments", assignmentResponseSchema, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(parsed),
   });
 }
@@ -91,7 +85,6 @@ export async function revokeAssignment(token: string, assignmentId: number): Pro
     agentActionResponseSchema,
     {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
     }
   );
 }

@@ -12,9 +12,9 @@ import {
   AlertCircle,
   Lock,
 } from "lucide-react";
-import { requestAdminOtp, verifyAdminOtp, logoutAdmin } from "@/services/authService";
+import { requestAdminOtp, verifyAdminOtp, logoutAdmin, checkSession } from "@/services/authService";
 import { useUserStore } from "@/store/useUserStore";
-import { getAccessToken, clearTokens } from "@/lib/api/client";
+import { clearTokens } from "@/lib/api/client";
 import { toast } from "@/components/ui/toast";
 import { isStaff, getDefaultLandingPath } from "@/lib/rbac";
 import { getErrorMessage } from "@/lib/errors";
@@ -42,17 +42,17 @@ export default function SignInPage() {
       return;
     }
 
-    const token = getAccessToken();
-    if (!token) return;
-
     let cancelled = false;
-    fetchProfile().then((user) => {
-      if (cancelled) return;
-      if (user && isStaff(user.role)) {
-        router.replace(getDefaultLandingPath(user.role));
-        return;
-      }
-      clearBackendUser();
+    checkSession().then((authenticated) => {
+      if (cancelled || !authenticated) return;
+      fetchProfile().then((user) => {
+        if (cancelled) return;
+        if (user && isStaff(user.role)) {
+          router.replace(getDefaultLandingPath(user.role));
+          return;
+        }
+        clearBackendUser();
+      });
     });
     return () => {
       cancelled = true;

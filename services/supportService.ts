@@ -15,7 +15,6 @@ export async function fetchSupportStaff(
   limit = 50
 ): Promise<SupportListResponse> {
   return apiRequest("/api/v1/admin/support", supportListResponseSchema, {
-    headers: { Authorization: `Bearer ${token}` },
     params: { page: page.toString(), limit: limit.toString() },
   });
 }
@@ -25,7 +24,6 @@ export async function fetchSupportDetail(
   id: string
 ): Promise<SupportDetailResponse> {
   return apiRequest(`/api/v1/admin/support/${id}`, userDetailsResponseSchema, {
-    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -35,7 +33,6 @@ export async function createSupportStaff(
 ): Promise<SupportDetailResponse> {
   return apiRequest("/api/v1/admin/support", userDetailsResponseSchema, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });
 }
@@ -46,6 +43,5 @@ export async function revokeSupportRole(
 ): Promise<SupportActionResponse> {
   return apiRequest(`/api/v1/admin/support/${id}/revoke-role`, supportActionResponseSchema, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
   });
 }

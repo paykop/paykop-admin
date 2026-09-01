@@ -16,9 +16,6 @@ export async function fetchNotifications(
   limit = 20
 ): Promise<NotificationListResponse> {
   return apiRequest("/api/v1/notifications", notificationListResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     params: {
       page: page.toString(),
       limit: limit.toString(),
@@ -32,9 +29,6 @@ export async function fetchNotifications(
 export async function markNotificationAsRead(token: string, id: number): Promise<NotificationActionResponse> {
   return apiRequest(`/api/v1/notifications/${id}/read`, notificationActionResponseSchema, {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }
 
@@ -44,8 +38,5 @@ export async function markNotificationAsRead(token: string, id: number): Promise
 export async function markAllNotificationsAsRead(token: string): Promise<NotificationActionResponse> {
   return apiRequest("/api/v1/notifications/read-all", notificationActionResponseSchema, {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }

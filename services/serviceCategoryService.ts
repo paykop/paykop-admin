@@ -15,9 +15,6 @@ import {
  */
 export async function fetchAdminServiceCategories(token: string): Promise<ServiceCategoryItem[]> {
   return apiRequest("/api/v1/admin/service-categories", serviceCategoryListResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }
 
@@ -30,9 +27,6 @@ export async function createAdminServiceCategory(
 ): Promise<ServiceCategoryItem> {
   return apiRequest("/api/v1/admin/service-categories", serviceCategoryItemSchema, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -47,9 +41,6 @@ export async function updateAdminServiceCategory(
 ): Promise<ServiceCategoryItem> {
   return apiRequest(`/api/v1/admin/service-categories/${id}`, serviceCategoryItemSchema, {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -64,9 +55,6 @@ export async function patchAdminServiceCategory(
 ): Promise<ServiceCategoryItem> {
   return apiRequest(`/api/v1/admin/service-categories/${id}`, serviceCategoryItemSchema, {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -80,8 +68,5 @@ export async function deleteAdminServiceCategory(
 ): Promise<ServiceCategoryActionResponse> {
   return apiRequest(`/api/v1/admin/service-categories/${id}`, serviceCategoryActionResponseSchema, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }

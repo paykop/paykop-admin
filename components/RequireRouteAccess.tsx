@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useUserStore } from "@/store/useUserStore";
-import { canAccessRoute } from "@/lib/rbac";
+import { resolveRouteForRole } from "@/lib/rbac";
 
 interface RequireRouteAccessProps {
   children: React.ReactNode;
@@ -15,11 +15,19 @@ export default function RequireRouteAccess({ children }: RequireRouteAccessProps
   const pathname = usePathname();
   const { backendUser, loading } = useUserStore();
 
-  const allowed = backendUser ? canAccessRoute(backendUser.role, pathname) : false;
+  const resolution = backendUser
+    ? resolveRouteForRole(backendUser.role, pathname)
+    : "deny";
+  const allowed = resolution === "allow";
 
   useEffect(() => {
     if (loading || !backendUser) return;
-    if (!canAccessRoute(backendUser.role, pathname)) {
+    const routeResolution = resolveRouteForRole(backendUser.role, pathname);
+    if (routeResolution === "redirect:/tickets") {
+      router.replace("/tickets");
+      return;
+    }
+    if (routeResolution === "deny") {
       router.replace("/unauthorized");
     }
   }, [backendUser, loading, pathname, router]);

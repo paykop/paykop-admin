@@ -62,3 +62,17 @@ export function getDefaultLandingPath(role: string | null | undefined): string {
   if (isSupport(role)) return "/tickets";
   return "/";
 }
+
+export type RouteResolution = "allow" | "redirect:/tickets" | "deny";
+
+/** Single source of truth for route access decisions. */
+export function resolveRouteForRole(
+  role: string | null | undefined,
+  pathname: string
+): RouteResolution {
+  if (!isStaff(role)) return "deny";
+  if (isAdmin(role)) return "allow";
+  if (pathname === "/" || pathname === "") return "redirect:/tickets";
+  if (canAccessRoute(role, pathname)) return "allow";
+  return "deny";
+}

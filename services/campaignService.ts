@@ -20,9 +20,6 @@ export async function fetchCampaigns(
 ): Promise<CampaignListResponse> {
   console.log(`[API] Fetching campaigns Page: ${page}`);
   return apiRequest("/api/v1/admin/campaigns", campaignListResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     params: {
       page: page.toString(),
       limit: limit.toString(),
@@ -40,9 +37,6 @@ export async function createCampaign(
   console.log(`[API] Creating campaign:`, data);
   return apiRequest("/api/v1/admin/campaigns", campaignItemSchema, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -58,9 +52,6 @@ export async function updateCampaign(
   console.log(`[API] Updating campaign ID: ${id}`, data);
   return apiRequest(`/api/v1/admin/campaigns/${id}`, campaignItemSchema, {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -75,8 +66,5 @@ export async function deleteCampaign(
   console.log(`[API] Deleting campaign ID: ${id}`);
   return apiRequest(`/api/v1/admin/campaigns/${id}`, campaignActionResponseSchema, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }

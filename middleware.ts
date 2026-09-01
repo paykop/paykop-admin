@@ -1,21 +1,47 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-const publicPaths = ['/sign-in', '/login', '/unauthorized'];
+const publicPaths = ["/sign-in", "/login", "/unauthorized"];
+
+function isTokenExpired(token: string): boolean {
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) return true;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))) as {
+      exp?: number;
+    };
+    if (!payload.exp) return false;
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return false;
+  }
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public routes and static assets
+  if (pathname === "/login") {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
+
   if (publicPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get('access_token')?.value || request.cookies.get('refresh_token')?.value;
+  if (pathname.startsWith("/api/auth") || pathname.startsWith("/api/proxy")) {
+    return NextResponse.next();
+  }
 
-  // If no auth tokens present, redirect to sign-in page
-  if (!token) {
-    const signInUrl = new URL('/sign-in', request.url);
+  const accessToken = request.cookies.get("access_token")?.value;
+  const refreshToken = request.cookies.get("refresh_token")?.value;
+
+  if (!accessToken && !refreshToken) {
+    const signInUrl = new URL("/sign-in", request.url);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  if (accessToken && isTokenExpired(accessToken) && !refreshToken) {
+    const signInUrl = new URL("/sign-in", request.url);
     return NextResponse.redirect(signInUrl);
   }
 
@@ -24,14 +50,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (images, etc.)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
 

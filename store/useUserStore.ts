@@ -5,7 +5,8 @@ import {
   fetchUserProfile,
   fetchUserPermissions,
 } from "../services/userService";
-import { getAccessToken, clearTokens } from "../lib/api/client";
+import { clearTokens } from "../lib/api/client";
+import { checkSession } from "../services/authService";
 import { isStaff } from "../lib/rbac";
 import { getErrorMessage } from "../lib/errors";
 import { ApiError } from "../services/apiService";
@@ -64,7 +65,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   error: null,
   setBackendUser: (backendUser) => set({ backendUser }),
 
-  fetchProfile: async (getToken) => {
+  fetchProfile: async (getToken?) => {
     if (fetchProfileInFlight) {
       return fetchProfileInFlight;
     }
@@ -72,12 +73,12 @@ export const useUserStore = create<UserState>((set, get) => ({
     fetchProfileInFlight = (async () => {
       set({ loading: true, error: null });
       try {
-        const token = getToken ? await getToken() : getAccessToken();
-        if (!token) {
+        const sessionActive = getToken ? Boolean(await getToken()) : await checkSession();
+        if (!sessionActive) {
           throw new Error("No authentication token found. Please sign in again.");
         }
 
-        const response = await fetchUserProfile(token);
+        const response = await fetchUserProfile();
 
         if (!isStaff(response.role)) {
           clearTokens();
@@ -94,7 +95,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         // Permissions are optional for the staff gate — skip if already loaded to reduce rate-limit pressure
         if (!get().permissions) {
           try {
-            const perms = await fetchUserPermissions(token);
+            const perms = await fetchUserPermissions();
             set({ permissions: perms });
           } catch (permsErr: unknown) {
             if (!(permsErr instanceof ApiError && permsErr.status === 429)) {
@@ -130,14 +131,14 @@ export const useUserStore = create<UserState>((set, get) => ({
     return fetchProfileInFlight;
   },
 
-  fetchPermissions: async (getToken) => {
+  fetchPermissions: async (getToken?) => {
     if (get().permissions || get().permissionsLoading) return;
 
     set({ permissionsLoading: true });
     try {
-      const token = getToken ? await getToken() : getAccessToken();
-      if (!token) return;
-      const response = await fetchUserPermissions(token);
+      const sessionActive = getToken ? Boolean(await getToken()) : await checkSession();
+      if (!sessionActive) return;
+      const response = await fetchUserPermissions();
       set({ permissions: response });
     } catch (err: unknown) {
       if (!(err instanceof ApiError && err.status === 429)) {

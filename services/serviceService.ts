@@ -24,10 +24,7 @@ export async function fetchAdminServices(
     params.status = status;
   }
 
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  return apiRequest("/api/v1/admin/services", serviceListResponseSchema, {
+  const headers: Record<string, string> = {};return apiRequest("/api/v1/admin/services", serviceListResponseSchema, {
     headers,
     params,
   });
@@ -41,10 +38,7 @@ export async function updateAdminServiceStatus(
   id: number | string,
   status: string
 ): Promise<ServiceStatusResponse> {
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  return apiRequest(`/api/v1/admin/services/${id}/status`, serviceStatusResponseSchema, {
+  const headers: Record<string, string> = {};return apiRequest(`/api/v1/admin/services/${id}/status`, serviceStatusResponseSchema, {
     method: "PUT",
     headers,
     body: JSON.stringify({ status }),

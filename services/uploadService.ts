@@ -37,9 +37,6 @@ export async function uploadImageFile(
     // 1. Request presigned URL from backend storage service (/api/v1/storage/presigned-url)
     const res = await apiRequest("/api/v1/storage/presigned-url", PresignResponseSchema, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       body: {
         file_name: file.name,
         content_type: file.type || "image/jpeg",

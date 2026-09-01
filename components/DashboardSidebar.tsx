@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import Image from "next/image";
+import SafeImage from "./SafeImage";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
@@ -159,12 +159,11 @@ export default function DashboardSidebar({ mobileOpen = false, onClose }: Dashbo
         <div className="p-4 border-t border-slate-800 flex items-center justify-between gap-3 bg-slate-900/60 shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
             {backendUser?.profile_picture_url ? (
-              <Image
+              <SafeImage
                 src={backendUser.profile_picture_url}
                 alt="Avatar"
                 width={40}
                 height={40}
-                unoptimized
                 className="w-10 h-10 rounded-full border border-slate-700 bg-slate-800 shrink-0 object-cover"
               />
             ) : (

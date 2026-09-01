@@ -12,7 +12,6 @@ import {
 
 export async function fetchCommerceSettings(token: string): Promise<CommerceSettings> {
   return apiRequest("/api/v1/admin/commerce/settings", commerceSettingsSchema, {
-    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -22,7 +21,6 @@ export async function updateCommerceSettings(
 ): Promise<CommerceSettings> {
   return apiRequest("/api/v1/admin/commerce/settings", commerceSettingsSchema, {
     method: "PUT",
-    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });
 }
@@ -40,7 +38,6 @@ export async function fetchCommissionBatches(
   if (sellerId) params.seller_id = sellerId;
 
   return apiRequest("/api/v1/admin/commissions/batches", commissionBatchListResponseSchema, {
-    headers: { Authorization: `Bearer ${token}` },
     params,
   });
 }
@@ -53,7 +50,6 @@ export async function fetchCommissionBatchDetail(
     `/api/v1/admin/commissions/batches/${id}`,
     commissionBatchDetailResponseSchema,
     {
-      headers: { Authorization: `Bearer ${token}` },
     }
   );
 }
@@ -64,7 +60,6 @@ export async function markCommissionBatchPaid(token: string, id: number): Promis
     commerceActionResponseSchema,
     {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
     }
   );
 }

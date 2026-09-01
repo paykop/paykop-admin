@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import Image from "next/image";
+import SafeImage from "./SafeImage";
 import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import {
@@ -125,12 +125,11 @@ export default function BackendProfile() {
               <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-900 space-y-3.5">
                 <div className="flex items-center gap-3 pb-3 border-b border-slate-900">
                   {backendUser.profile_picture_url ? (
-                    <Image
+                    <SafeImage
                       src={backendUser.profile_picture_url}
                       alt="Avatar"
                       width={40}
                       height={40}
-                      unoptimized
                       className="w-10 h-10 rounded-full border border-slate-800 object-cover"
                     />
                   ) : (

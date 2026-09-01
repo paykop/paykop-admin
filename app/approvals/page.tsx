@@ -1,16 +1,20 @@
-// src/app/approvals/page.tsx
 "use client";
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useUserStore } from "@/store/useUserStore";
+import { getDefaultLandingPath } from "@/lib/rbac";
 
 export default function ApprovalsPage() {
   const router = useRouter();
-  
+  const { backendUser } = useUserStore();
+
   useEffect(() => {
-    // The approvals workflow was removed in API V4. Redirect to dashboard.
-    router.push("/");
-  }, [router]);
+    const destination = backendUser
+      ? getDefaultLandingPath(backendUser.role)
+      : "/sign-in";
+    router.replace(destination);
+  }, [router, backendUser]);
 
   return null;
 }

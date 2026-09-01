@@ -1,93 +1,68 @@
 // src/services/authService.ts
-import { apiRequest } from "./apiService";
 import {
   otpRequestResponseSchema,
-  otpVerifyResponseSchema,
-  refreshTokenResponseSchema,
-  logoutResponseSchema,
   OtpVerifyResponse,
-  RefreshTokenResponse,
 } from "../schemas/authSchema";
-import {
-  setTokens,
-  clearTokens,
-  getRefreshToken,
-  getAccessToken,
-} from "../lib/api/client";
+import { notifyAuthChange } from "../lib/api/client";
 
-/**
- * Request Admin login OTP
- */
+async function authFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(path, {
+    ...options,
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message =
+      (data as { message?: string }).message ||
+      (data as { error?: string }).error ||
+      "Authentication request failed";
+    throw new Error(message);
+  }
+  return data as T;
+}
+
 export async function requestAdminOtp(email: string) {
-  return apiRequest("/api/v1/admin/auth/otp/request", otpRequestResponseSchema, {
+  const result = await authFetch<unknown>("/api/auth/otp/request", {
     method: "POST",
     body: JSON.stringify({ email }),
   });
+  return otpRequestResponseSchema.parse(result);
 }
 
-/**
- * Verify Admin OTP and store session tokens
- */
-export async function verifyAdminOtp(
-  email: string,
-  otp: string
-): Promise<OtpVerifyResponse> {
-  const result = await apiRequest("/api/v1/admin/auth/otp/verify", otpVerifyResponseSchema, {
+export async function verifyAdminOtp(email: string, otp: string): Promise<OtpVerifyResponse> {
+  await authFetch<{ success: boolean }>("/api/auth/otp/verify", {
     method: "POST",
     body: JSON.stringify({ email, otp }),
   });
-
-  setTokens(result.access_token, result.refresh_token, result.expires_in);
-  return result;
+  notifyAuthChange();
+  return {
+    access_token: "",
+    refresh_token: "",
+    token_type: "Bearer",
+    expires_in: 86400,
+  };
 }
 
-/**
- * Refresh Admin Session Token
- */
-export async function refreshAdminToken(
-  refreshToken?: string
-): Promise<RefreshTokenResponse> {
-  const tokenToUse = refreshToken || getRefreshToken();
-  if (!tokenToUse) {
-    throw new Error("No refresh token available");
-  }
-
-  const result = await apiRequest("/api/v1/admin/auth/refresh", refreshTokenResponseSchema, {
-    method: "POST",
-    body: JSON.stringify({ refresh_token: tokenToUse }),
-  });
-
-  if (result.access_token) {
-    setTokens(
-      result.access_token,
-      result.refresh_token || tokenToUse,
-      result.expires_in
-    );
-  }
-
-  return result;
-}
-
-/**
- * Logout Admin and invalidate server session
- */
 export async function logoutAdmin(): Promise<void> {
-  const refreshToken = getRefreshToken();
-  const accessToken = getAccessToken();
-
   try {
-    if (accessToken && refreshToken) {
-      await apiRequest("/api/v1/auth/logout", logoutResponseSchema, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-    }
+    await authFetch("/api/auth/logout", { method: "POST" });
   } catch (err) {
     console.warn("Server logout notification failed:", err);
   } finally {
-    clearTokens();
+    notifyAuthChange();
+  }
+}
+
+export async function checkSession(): Promise<boolean> {
+  try {
+    const result = await authFetch<{ authenticated: boolean }>("/api/auth/session");
+    return Boolean(result.authenticated);
+  } catch {
+    return false;
   }
 }

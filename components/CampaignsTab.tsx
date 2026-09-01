@@ -19,6 +19,7 @@ export default function CampaignsTab() {
   const canManage = isAdmin(backendUser?.role);
   const { campaigns, loading, fetchAdminCampaigns, createAdminCampaign, updateAdminCampaign, deleteAdminCampaign } = useAdminCampaignsStore();
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<CampaignItem | null>(null);
@@ -67,7 +68,8 @@ export default function CampaignsTab() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canManage) return;
+    if (!canManage || saving) return;
+    setSaving(true);
     try {
       const payload: CreateCampaignRequest | UpdateCampaignRequest = {
         title: formData.title,
@@ -90,6 +92,8 @@ export default function CampaignsTab() {
       setIsDialogOpen(false);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Failed to save campaign"));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -324,8 +328,8 @@ export default function CampaignsTab() {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-lg h-9 cursor-pointer">
                 Cancel
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-9 cursor-pointer">
-                Save
+              <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-9 cursor-pointer">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
               </Button>
             </DialogFooter>
           </form>

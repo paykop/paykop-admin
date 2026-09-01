@@ -15,9 +15,6 @@ import {
  */
 export async function fetchAdminProductCategories(token: string): Promise<ProductCategoryItem[]> {
   return apiRequest("/api/v1/admin/categories", productCategoryListResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }
 
@@ -30,9 +27,6 @@ export async function createAdminProductCategory(
 ): Promise<ProductCategoryItem> {
   return apiRequest("/api/v1/admin/categories", productCategoryItemSchema, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -47,9 +41,6 @@ export async function updateAdminProductCategory(
 ): Promise<ProductCategoryItem> {
   return apiRequest(`/api/v1/admin/categories/${id}`, productCategoryItemSchema, {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -63,8 +54,5 @@ export async function deleteAdminProductCategory(
 ): Promise<ProductCategoryActionResponse> {
   return apiRequest(`/api/v1/admin/categories/${id}`, productCategoryActionResponseSchema, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }

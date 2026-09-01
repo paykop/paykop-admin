@@ -2,14 +2,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import DashboardSidebar from "./DashboardSidebar";
 import RequireRouteAccess from "./RequireRouteAccess";
 import { Loader2, ShieldAlert, Menu } from "lucide-react";
 import NotificationPopover from "./NotificationPopover";
-import { canAccessRoute, isSupport } from "@/lib/rbac";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -17,7 +16,6 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { backendUser, loading, error, fetchProfile } = useUserStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -33,17 +31,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       fetchProfile(getToken);
     }
   }, [isLoaded, isSignedIn, backendUser, error, loading, fetchProfile, getToken]);
-
-  useEffect(() => {
-    if (!backendUser) return;
-    if (pathname === "/" && isSupport(backendUser.role)) {
-      router.replace("/tickets");
-      return;
-    }
-    if (!canAccessRoute(backendUser.role, pathname)) {
-      router.replace("/unauthorized");
-    }
-  }, [backendUser, pathname, router]);
 
   if (isLoaded && !isSignedIn) {
     return (

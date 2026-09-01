@@ -28,9 +28,6 @@ export async function createSubscriptionPlan(
   console.log(`[API] Creating subscription plan:`, data);
   return apiRequest("/api/v1/admin/subscriptions", subscriptionPlanSchema, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -46,9 +43,6 @@ export async function updateSubscriptionPlan(
   console.log(`[API] Updating subscription plan ID: ${id}`, data);
   return apiRequest(`/api/v1/admin/subscriptions/${id}`, subscriptionPlanSchema, {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -63,9 +57,6 @@ export async function deleteSubscriptionPlan(
   console.log(`[API] Deleting subscription plan ID: ${id}`);
   return apiRequest(`/api/v1/admin/subscriptions/${id}`, subscriptionPlanActionResponseSchema, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }
 
@@ -79,9 +70,6 @@ export async function fetchSubscriptionHistory(
 ): Promise<SubscriptionHistoryResponse> {
   console.log(`[API] Fetching subscription history Page: ${page}`);
   return apiRequest("/api/v1/admin/subscriptions/history", subscriptionHistoryResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     params: {
       page: page.toString(),
       limit: limit.toString(),
@@ -94,9 +82,6 @@ export async function fetchSubscriptionHistory(
  */
 export async function fetchSubscriptionPlans(token: string): Promise<SubscriptionPlan[]> {
   return apiRequest("/api/v1/admin/subscriptions/plans", z.array(subscriptionPlanSchema), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }
 
@@ -109,9 +94,6 @@ export async function fetchSubscriptionReconciliations(
   limit = 20
 ): Promise<ReconciliationListResponse> {
   return apiRequest("/api/v1/admin/subscriptions/reconciliation", reconciliationListResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     params: {
       page: page.toString(),
       limit: limit.toString(),
@@ -132,9 +114,6 @@ export async function resolveSubscriptionReconciliation(
     subscriptionPlanActionResponseSchema,
     {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       body: JSON.stringify({ plan_id: planId }),
     }
   );

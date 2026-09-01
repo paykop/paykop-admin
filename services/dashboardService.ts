@@ -12,9 +12,6 @@ import {
  */
 export async function fetchDashboardStats(token: string): Promise<DashboardResponse> {
   return apiRequest("/api/v1/admin/dashboard", dashboardResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }
 
@@ -23,8 +20,5 @@ export async function fetchDashboardStats(token: string): Promise<DashboardRespo
  */
 export async function fetchAdminMetrics(token: string): Promise<AdminMetrics> {
   return apiRequest("/api/v1/admin/metrics", adminMetricsSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }

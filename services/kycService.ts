@@ -19,7 +19,6 @@ export async function fetchKycSubmissions(
   if (status && status !== "all") params.status = status;
 
   return apiRequest("/api/v1/admin/kyc/submissions", kycSubmissionListResponseSchema, {
-    headers: { Authorization: `Bearer ${token}` },
     params,
   });
 }
@@ -29,7 +28,6 @@ export async function fetchKycSubmission(
   id: number | string
 ): Promise<KycSubmission> {
   return apiRequest(`/api/v1/admin/kyc/submissions/${id}`, kycSubmissionSchema, {
-    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -39,7 +37,6 @@ export async function approveKycSubmission(
 ): Promise<KycSubmission> {
   return apiRequest(`/api/v1/admin/kyc/submissions/${id}/approve`, kycSubmissionSchema, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -50,7 +47,6 @@ export async function rejectKycSubmission(
 ): Promise<KycSubmission> {
   return apiRequest(`/api/v1/admin/kyc/submissions/${id}/reject`, kycSubmissionSchema, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ reason }),
   });
 }

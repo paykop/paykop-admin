@@ -17,7 +17,7 @@ import {
   LogIn, Star, Trophy, Award, Handshake, UserCog,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import SafeImage from "./SafeImage";
 import { UpdateUserRequest, UserDetailsResponse } from "../schemas/userSchema";
 
 type EditFormState = { first_name: string; last_name: string; role: string };
@@ -247,7 +247,7 @@ export default function UsersTab() {
               <div className="bg-gradient-to-br from-slate-800 to-slate-900 px-6 pt-6 pb-8">
                 <div className="flex items-center gap-4">
                   {selectedUser.profile_picture_url ? (
-                    <Image src={selectedUser.profile_picture_url} alt="Avatar" width={64} height={64} unoptimized className="w-16 h-16 rounded-2xl object-cover border-2 border-white/20 shadow-lg" />
+                    <SafeImage src={selectedUser.profile_picture_url} alt="Avatar" width={64} height={64} className="w-16 h-16 rounded-2xl object-cover border-2 border-white/20 shadow-lg" />
                   ) : (() => {
                     const name = `${selectedUser.first_name} ${selectedUser.last_name}`.trim() || "U";
                     const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();

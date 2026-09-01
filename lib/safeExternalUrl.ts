@@ -18,13 +18,38 @@ export function safeExternalUrl(raw: string | null | undefined): string | null {
       if (host === "localhost" || host === "127.0.0.1" || host === "[::1]") {
         return url.toString();
       }
-      // Allow http only in non-production (e.g. local API / ngrok without TLS)
       if (process.env.NODE_ENV !== "production") {
         return url.toString();
       }
     }
 
     return null;
+  } catch {
+    return null;
+  }
+}
+
+function getAllowedImageHosts(): Set<string> {
+  const raw = process.env.NEXT_PUBLIC_ALLOWED_IMAGE_HOSTS || "";
+  return new Set(
+    raw
+      .split(",")
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+/** Safe image src with optional CDN host allowlist. */
+export function safeImageSrc(raw: string | null | undefined): string | null {
+  const safe = safeExternalUrl(raw);
+  if (!safe) return null;
+
+  const allowlist = getAllowedImageHosts();
+  if (allowlist.size === 0) return safe;
+
+  try {
+    const host = new URL(safe).hostname.toLowerCase();
+    return allowlist.has(host) ? safe : null;
   } catch {
     return null;
   }

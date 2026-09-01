@@ -27,9 +27,6 @@ export async function createAdminBanner(
 ): Promise<BannerItem> {
   return apiRequest("/api/v1/admin/banners", bannerItemSchema, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -45,9 +42,6 @@ export async function updateAdminBanner(
 ): Promise<BannerItem> {
   return apiRequest(`/api/v1/admin/banners/${id}`, bannerItemSchema, {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -61,8 +55,5 @@ export async function deleteAdminBanner(
 ): Promise<BannerActionResponse> {
   return apiRequest(`/api/v1/admin/banners/${id}`, bannerActionResponseSchema, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }

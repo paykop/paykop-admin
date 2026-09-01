@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
+import SafeImage from "./SafeImage";
 import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import { isAdmin } from "@/lib/rbac";
@@ -11,6 +11,7 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Loader2, Plus, Edit, Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "./ui/toast";
+import { safeImageSrc } from "@/lib/safeExternalUrl";
 import { BannerItem, bannerTypeSchema } from "../schemas/bannerSchema";
 
 type BannerFormState = {
@@ -71,7 +72,11 @@ export default function BannersTab() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canManage || !form.image_url.trim()) return;
+    if (!canManage || !form.image_url.trim() || saving) return;
+    if (!safeImageSrc(form.image_url.trim())) {
+      toast.error("Please provide a valid HTTPS image URL.");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -161,12 +166,11 @@ export default function BannersTab() {
                     <TableCell className="p-4 pl-6">
                       <div className="flex items-center gap-3">
                         {b.image_url ? (
-                          <Image
+                          <SafeImage
                             src={b.image_url}
                             alt={b.title || "Banner"}
                             width={56}
                             height={36}
-                            unoptimized
                             className="w-14 h-9 rounded-lg object-cover border border-slate-200 bg-slate-50"
                           />
                         ) : (

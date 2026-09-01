@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
+import SafeImage from "./SafeImage";
 import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import { isAdmin } from "@/lib/rbac";
@@ -208,12 +208,11 @@ export default function ProductCategoriesTab() {
                     <TableCell className="p-4 pl-6">
                       <div className="flex items-center gap-3">
                         {cat.image_url ? (
-                          <Image
+                          <SafeImage
                             src={cat.image_url}
                             alt={cat.name}
                             width={36}
                             height={36}
-                            unoptimized
                             className="w-9 h-9 rounded-lg object-cover border border-slate-200 shadow-sm shrink-0 bg-slate-50"
                           />
                         ) : (
@@ -326,16 +325,12 @@ export default function ProductCategoriesTab() {
                 {/* Live Image Preview */}
                 {formData.image_url ? (
                   <div className="mt-1 flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
-                    <Image
+                    <SafeImage
                       src={formData.image_url}
                       alt="Category Preview"
                       width={48}
                       height={48}
-                      unoptimized
                       className="w-12 h-12 rounded-lg object-cover border border-slate-200 shadow-sm shrink-0 bg-white"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = "none";
-                      }}
                     />
                     <div className="overflow-hidden">
                       <p className="text-xs font-bold text-slate-800 truncate">{formData.name || "Category Image"}</p>

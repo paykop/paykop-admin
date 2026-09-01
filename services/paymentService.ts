@@ -28,9 +28,6 @@ export async function fetchPayments(
   if (endDate) params.end_date = endDate;
 
   return apiRequest("/api/v1/admin/payments", paymentListResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     params,
   });
 }
@@ -42,9 +39,6 @@ export async function processRefund(token: string, id: string | number): Promise
   console.log(`[API] Processing refund for payment ID: ${id}`);
   return apiRequest(`/api/v1/admin/refunds/${id}`, refundResponseSchema, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }
 
@@ -61,9 +55,6 @@ export async function fetchTransactionReport(
   if (endDate) params.end_date = endDate;
 
   return apiRequest("/api/v1/admin/reports/transactions", transactionReportResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     params,
   });
 }

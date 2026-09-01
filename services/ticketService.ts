@@ -28,7 +28,6 @@ export async function fetchTickets(
   if (search?.trim()) params.q = search.trim();
 
   const data = await apiRequest("/api/v1/admin/tickets", ticketListRawResponseSchema, {
-    headers: { Authorization: `Bearer ${token}` },
     params,
   });
 
@@ -43,7 +42,6 @@ export async function fetchTicketDetail(
   id: number | string
 ): Promise<TicketItem> {
   const data = await apiRequest(`/api/v1/admin/tickets/${id}`, ticketDetailResponseSchema, {
-    headers: { Authorization: `Bearer ${token}` },
   });
   return mapTicketFromAPI(data.ticket);
 }
@@ -55,7 +53,6 @@ export async function updateTicketStatus(
 ): Promise<TicketItem> {
   await apiRequest(`/api/v1/admin/tickets/${id}/status`, ticketStatusResponseSchema, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });
   return fetchTicketDetail(token, id);
@@ -68,7 +65,6 @@ export async function createTicketReply(
 ): Promise<TicketActionResponse> {
   await apiRequest(`/api/v1/admin/tickets/${id}/messages`, ticketMessageResponseSchema, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });
   return { status: "ok" };

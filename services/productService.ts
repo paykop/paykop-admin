@@ -20,9 +20,6 @@ export async function fetchAdminProducts(token: string, page = 1, limit = 10, st
   if (status) params.status = status;
 
   return apiRequest("/api/v1/admin/products", adminProductListResponseSchema, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     params,
   });
 }
@@ -33,9 +30,6 @@ export async function fetchAdminProducts(token: string, page = 1, limit = 10, st
 export async function updateAdminProductStatus(token: string, id: number, status: string) {
   return apiRequest(`/api/v1/admin/products/${id}/status`, actionResponseSchema, {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify({ status }),
   });
 }
@@ -46,8 +40,5 @@ export async function updateAdminProductStatus(token: string, id: number, status
 export async function deleteAdminProduct(token: string, id: number) {
   return apiRequest(`/api/v1/admin/products/${id}`, actionResponseSchema, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }
