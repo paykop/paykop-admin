@@ -12,7 +12,8 @@ import {
   AlertCircle,
   Lock,
 } from "lucide-react";
-import { requestAdminOtp, verifyAdminOtp, logoutAdmin, checkSession } from "@/services/authService";
+import { requestAdminOtp, verifyAdminOtp, logoutAdmin } from "@/services/authService";
+import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "@/store/useUserStore";
 import { clearTokens } from "@/lib/api/client";
 import { toast } from "@/components/ui/toast";
@@ -23,6 +24,7 @@ const emptySubscribe = () => () => {};
 
 export default function SignInPage() {
   const router = useRouter();
+  const { isLoaded, sessionStatus, refreshSession } = useAuth();
   const { fetchProfile, backendUser, clearBackendUser } = useUserStore();
 
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -35,29 +37,36 @@ export default function SignInPage() {
 
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Check if already logged in — skip re-fetch when store already has a staff user
   useEffect(() => {
+    if (!isLoaded) return;
+
+    if (sessionStatus === "unauthenticated" && backendUser) {
+      clearBackendUser();
+      return;
+    }
+
+    if (sessionStatus !== "authenticated") return;
+
+    let cancelled = false;
+
     if (backendUser && isStaff(backendUser.role)) {
       router.replace(getDefaultLandingPath(backendUser.role));
       return;
     }
 
-    let cancelled = false;
-    checkSession().then((authenticated) => {
-      if (cancelled || !authenticated) return;
-      fetchProfile().then((user) => {
-        if (cancelled) return;
-        if (user && isStaff(user.role)) {
-          router.replace(getDefaultLandingPath(user.role));
-          return;
-        }
-        clearBackendUser();
-      });
+    fetchProfile().then((user) => {
+      if (cancelled) return;
+      if (user && isStaff(user.role)) {
+        router.replace(getDefaultLandingPath(user.role));
+        return;
+      }
+      clearBackendUser();
     });
+
     return () => {
       cancelled = true;
     };
-  }, [backendUser, fetchProfile, clearBackendUser, router]);
+  }, [isLoaded, sessionStatus, backendUser, fetchProfile, clearBackendUser, router]);
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -186,6 +195,33 @@ export default function SignInPage() {
     }
   };
 
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+        <p className="text-slate-400 text-sm font-semibold tracking-wide">Verifying session...</p>
+      </div>
+    );
+  }
+
+  if (sessionStatus === "error") {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4 p-4">
+        <AlertCircle className="w-10 h-10 text-amber-400" />
+        <p className="text-slate-300 text-sm font-medium text-center max-w-sm">
+          Could not verify your session. Check your connection and try again.
+        </p>
+        <button
+          type="button"
+          onClick={() => refreshSession()}
+          className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition cursor-pointer"
+        >
+          Retry Session Check
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden text-slate-100 selection:bg-blue-500 selection:text-white">
       {/* Background Decorative Gradient Orbs */}
@@ -213,7 +249,7 @@ export default function SignInPage() {
 
           {step === "email" ? (
             /* Step 1: Work Email Form */
-            <form onSubmit={handleRequestOtp} className="space-y-5">
+            <form onSubmit={handleRequestOtp} noValidate className="space-y-5">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-blue-400" /> Work Email

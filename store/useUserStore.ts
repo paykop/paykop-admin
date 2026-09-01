@@ -6,7 +6,7 @@ import {
   fetchUserPermissions,
 } from "../services/userService";
 import { clearTokens } from "../lib/api/client";
-import { checkSession } from "../services/authService";
+import { resolveSessionStatus } from "../services/authService";
 import { isStaff } from "../lib/rbac";
 import { getErrorMessage } from "../lib/errors";
 import { ApiError } from "../services/apiService";
@@ -73,9 +73,18 @@ export const useUserStore = create<UserState>((set, get) => ({
     fetchProfileInFlight = (async () => {
       set({ loading: true, error: null });
       try {
-        const sessionActive = getToken ? Boolean(await getToken()) : await checkSession();
-        if (!sessionActive) {
-          throw new Error("No authentication token found. Please sign in again.");
+        if (getToken) {
+          if (!(await getToken())) {
+            throw new Error("No authentication token found. Please sign in again.");
+          }
+        } else {
+          const status = await resolveSessionStatus();
+          if (status === "error") {
+            throw new Error("Could not verify session. Check your connection and try again.");
+          }
+          if (status !== "authenticated") {
+            throw new Error("No authentication token found. Please sign in again.");
+          }
         }
 
         const response = await fetchUserProfile();
@@ -136,7 +145,9 @@ export const useUserStore = create<UserState>((set, get) => ({
 
     set({ permissionsLoading: true });
     try {
-      const sessionActive = getToken ? Boolean(await getToken()) : await checkSession();
+      const sessionActive = getToken
+        ? Boolean(await getToken())
+        : (await resolveSessionStatus()) === "authenticated";
       if (!sessionActive) return;
       const response = await fetchUserPermissions();
       set({ permissions: response });

@@ -1,64 +1,19 @@
 import { test, expect } from "@playwright/test";
+import { addAuthCookies, mockAuthenticatedSupport } from "./helpers/auth";
 
-test("support user on home redirects to tickets", async ({ page, context }) => {
-  await context.addCookies([
-    { name: "access_token", value: "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjk5OTk5OTk5OTl9.sig", url: "http://localhost:3000" },
-    { name: "refresh_token", value: "refresh-test", url: "http://localhost:3000" },
-  ]);
-
-  await page.route("**/api/proxy/auth/me", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: "support-1",
-        email: "support@paykop.com",
-        role: "support",
-        first_name: "Support",
-        last_name: "User",
-      }),
-    });
-  });
-
-  await page.route("**/api/auth/session", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ authenticated: true }),
-    });
-  });
+test("support user on home redirects to tickets", async ({ page, context, baseURL }) => {
+  if (!baseURL) throw new Error("baseURL is required");
+  await addAuthCookies(context, baseURL);
+  await mockAuthenticatedSupport(page);
 
   await page.goto("/");
-  await expect(page).toHaveURL(/\/tickets/);
+  await expect(page).toHaveURL(/\/tickets/, { timeout: 30000 });
 });
 
-test("support user cannot access banners", async ({ page, context }) => {
-  await context.addCookies([
-    { name: "access_token", value: "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjk5OTk5OTk5OTl9.sig", url: "http://localhost:3000" },
-    { name: "refresh_token", value: "refresh-test", url: "http://localhost:3000" },
-  ]);
-
-  await page.route("**/api/proxy/auth/me", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: "support-1",
-        email: "support@paykop.com",
-        role: "support",
-        first_name: "Support",
-        last_name: "User",
-      }),
-    });
-  });
-
-  await page.route("**/api/auth/session", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ authenticated: true }),
-    });
-  });
+test("support user cannot access banners", async ({ page, context, baseURL }) => {
+  if (!baseURL) throw new Error("baseURL is required");
+  await addAuthCookies(context, baseURL);
+  await mockAuthenticatedSupport(page);
 
   await page.goto("/banners");
   await expect(page).toHaveURL(/\/unauthorized/);

@@ -5,6 +5,8 @@ import {
 } from "../schemas/authSchema";
 import { notifyAuthChange } from "../lib/api/client";
 
+export type SessionStatus = "authenticated" | "unauthenticated" | "error";
+
 async function authFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
     ...options,
@@ -58,11 +60,28 @@ export async function logoutAdmin(): Promise<void> {
   }
 }
 
-export async function checkSession(): Promise<boolean> {
+export async function resolveSessionStatus(): Promise<SessionStatus> {
   try {
-    const result = await authFetch<{ authenticated: boolean }>("/api/auth/session");
-    return Boolean(result.authenticated);
+    const response = await fetch("/api/auth/session", {
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+
+    const data = (await response.json().catch(() => ({}))) as { authenticated?: boolean };
+
+    if (!response.ok) {
+      if (response.status === 401) return "unauthenticated";
+      return "error";
+    }
+
+    return data.authenticated ? "authenticated" : "unauthenticated";
   } catch {
-    return false;
+    return "error";
   }
+}
+
+/** True only when the server confirms an active session. */
+export async function checkSession(): Promise<boolean> {
+  return (await resolveSessionStatus()) === "authenticated";
 }
