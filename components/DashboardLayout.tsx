@@ -72,7 +72,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   }
 
-  if (loading || (!backendUser && !error)) {
+  if ((loading && !backendUser) || (!backendUser && !error)) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />

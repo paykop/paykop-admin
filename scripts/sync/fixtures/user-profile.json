@@ -1,0 +1,12 @@
+{
+  "id": "admin-1",
+  "email": "admin@paykop.com",
+  "phone": "",
+  "first_name": "Admin",
+  "last_name": "User",
+  "role": "admin",
+  "is_onboarded": true,
+  "has_subscription": false,
+  "profile_picture_url": "",
+  "address": ""
+}

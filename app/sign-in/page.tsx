@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Mail,
   ArrowRight,
@@ -231,9 +232,14 @@ export default function SignInPage() {
       <div className="w-full max-w-md relative z-10">
         {/* Brand Header */}
         <div className="text-center mb-8 space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white text-2xl shadow-xl shadow-blue-500/20 mx-auto border border-blue-400/30">
-            P
-          </div>
+          <Image
+            src="/brand/paykop-icon.png"
+            alt="Paykop"
+            width={48}
+            height={48}
+            className="w-12 h-12 rounded-2xl mx-auto shadow-xl border border-blue-400/30"
+            priority
+          />
           <h1 className="text-2xl font-black text-white tracking-tight">Paykop Admin Portal</h1>
           <p className="text-xs text-slate-400 font-medium">Secure Two-Factor Administrative Access</p>
         </div>

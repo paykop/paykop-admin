@@ -30,10 +30,10 @@ export default function BackendProfile() {
   };
 
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
+    if (isLoaded && isSignedIn && !backendUser) {
       fetchProfile(getToken);
     }
-  }, [isLoaded, isSignedIn, fetchProfile, getToken]);
+  }, [isLoaded, isSignedIn, backendUser, fetchProfile, getToken]);
 
   if (!isLoaded) {
     return (

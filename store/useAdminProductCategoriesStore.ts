@@ -49,8 +49,10 @@ export const useAdminProductCategoriesStore = create<AdminProductCategoriesState
       set({ categories: Array.isArray(resp) ? resp : [], error: null });
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 404) {
-        console.warn("[Store] Product categories endpoint not available yet (404)");
-        set({ categories: [], error: null });
+        set({
+          categories: [],
+          error: "Product Categories API is not deployed on the backend (404). Track in sync inventory.",
+        });
       } else {
         console.error("[Store] Failed to fetch product categories", err);
         set({ error: getErrorMessage(err, "Failed to fetch product categories") });

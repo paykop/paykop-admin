@@ -3,6 +3,7 @@
 
 import React, { useEffect } from "react";
 import SafeImage from "./SafeImage";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
@@ -27,6 +28,8 @@ import {
   X,
   Store,
   Ticket,
+  Settings,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { canAccessRoute } from "@/lib/rbac";
@@ -60,6 +63,8 @@ export default function DashboardSidebar({ mobileOpen = false, onClose }: Dashbo
     { id: "service-categories", label: "Service Categories", icon: LayoutGrid, href: "/service-categories" },
     { id: "services", label: "Service Moderation", icon: CheckSquare, href: "/services" },
     { id: "logs", label: "System Logs", icon: Terminal, href: "/logs" },
+    { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+    { id: "devtools", label: "Dev Tools", icon: Wrench, href: "/devtools" },
   ];
 
   const visibleNav = navItems.filter((item) => canAccessRoute(role, item.href));
@@ -110,9 +115,13 @@ export default function DashboardSidebar({ mobileOpen = false, onClose }: Dashbo
       <aside className={asideClasses}>
         <div className="p-6 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-blue-500/20">
-              P
-            </div>
+            <Image
+              src="/brand/paykop-icon.png"
+              alt="Paykop"
+              width={36}
+              height={36}
+              className="w-9 h-9 rounded-lg shadow-lg shadow-blue-500/20"
+            />
             <div>
               <h1 className="font-bold text-white tracking-wide text-[16px]">Paykop Admin</h1>
             </div>

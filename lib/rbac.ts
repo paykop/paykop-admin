@@ -4,7 +4,7 @@ export const STAFF_ROLES = ["admin", "support"] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
 
 /** Routes accessible to support staff (allowlist). */
-export const SUPPORT_ROUTES = ["/tickets", "/users", "/kyc"] as const;
+export const SUPPORT_ROUTES = ["/tickets", "/users", "/kyc", "/settings"] as const;
 
 export type SupportRoute = (typeof SUPPORT_ROUTES)[number];
 
@@ -24,6 +24,7 @@ export const ADMIN_ONLY_ROUTES = [
   "/payments",
   "/commerce",
   "/logs",
+  "/devtools",
 ] as const;
 
 export type AdminOnlyRoute = (typeof ADMIN_ONLY_ROUTES)[number];

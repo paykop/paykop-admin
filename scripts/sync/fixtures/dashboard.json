@@ -1,0 +1,13 @@
+{
+  "message": "ok",
+  "counts": {
+    "total_users": 100,
+    "buyers": 50,
+    "sellers": 30,
+    "agents": 5,
+    "admins": 2,
+    "pending_products": 3,
+    "approved_products": 20,
+    "rejected_products": 1
+  }
+}

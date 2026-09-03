@@ -3,6 +3,7 @@ import { getErrorMessage } from "../lib/errors";
 import {
   SubscriptionPlan,
   SubscriptionHistoryItem,
+  ReconciliationItem,
   CreateSubscriptionPlanRequest,
   UpdateSubscriptionPlanRequest,
 } from "../schemas/subscriptionSchema";
@@ -11,14 +12,23 @@ import {
   updateSubscriptionPlan,
   deleteSubscriptionPlan,
   fetchSubscriptionHistory,
+  fetchSubscriptionPlans,
+  fetchSubscriptionReconciliations,
+  resolveSubscriptionReconciliation,
 } from "../services/subscriptionService";
 
 interface AdminSubscriptionsState {
   plans: SubscriptionPlan[];
   history: SubscriptionHistoryItem[];
   historyTotal: number;
+  reconciliations: ReconciliationItem[];
+  reconciliationsTotal: number;
   loading: boolean;
   error: string | null;
+
+  fetchPlans: (getToken: () => Promise<string | null>) => Promise<void>;
+  fetchHistory: (getToken: () => Promise<string | null>, page?: number, limit?: number) => Promise<void>;
+  fetchReconciliations: (getToken: () => Promise<string | null>, page?: number, limit?: number) => Promise<void>;
 
   createPlan: (
     getToken: () => Promise<string | null>,
@@ -36,19 +46,74 @@ interface AdminSubscriptionsState {
     id: string | number
   ) => Promise<void>;
 
-  fetchHistory: (
+  resolveReconciliation: (
     getToken: () => Promise<string | null>,
-    page?: number,
-    limit?: number
+    id: number,
+    planId: number
   ) => Promise<void>;
 }
 
-export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set) => ({
+export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set, get) => ({
   plans: [],
   history: [],
   historyTotal: 0,
+  reconciliations: [],
+  reconciliationsTotal: 0,
   loading: false,
   error: null,
+
+  fetchPlans: async (getToken) => {
+    set({ loading: true, error: null });
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("No token provided");
+      const plans = await fetchSubscriptionPlans(token);
+      set({ plans, error: null });
+    } catch (err: unknown) {
+      set({ error: getErrorMessage(err, "Failed to fetch subscription plans") });
+      throw err;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchHistory: async (getToken, page = 1, limit = 10) => {
+    set({ loading: true, error: null });
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("No token provided");
+      const resp = await fetchSubscriptionHistory(token, page, limit);
+      set({
+        history: resp.subscriptions || [],
+        historyTotal: resp.total || 0,
+        error: null,
+      });
+    } catch (err: unknown) {
+      set({ error: getErrorMessage(err, "Failed to fetch subscription history") });
+      throw err;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchReconciliations: async (getToken, page = 1, limit = 20) => {
+    set({ loading: true, error: null });
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("No token provided");
+      const resp = await fetchSubscriptionReconciliations(token, page, limit);
+      set({
+        reconciliations: resp.items || [],
+        reconciliationsTotal: resp.total || 0,
+        error: null,
+      });
+    } catch (err: unknown) {
+      set({ error: getErrorMessage(err, "Failed to fetch reconciliations") });
+      throw err;
+    } finally {
+      set({ loading: false });
+    }
+  },
 
   createPlan: async (getToken, data) => {
     set({ loading: true, error: null });
@@ -62,7 +127,6 @@ export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set) 
       }));
       return newPlan;
     } catch (err: unknown) {
-      console.error("[Store] Failed to create subscription plan", err);
       set({ error: getErrorMessage(err, "Failed to create plan") });
       throw err;
     } finally {
@@ -82,7 +146,6 @@ export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set) 
       }));
       return updatedPlan;
     } catch (err: unknown) {
-      console.error("[Store] Failed to update subscription plan", err);
       set({ error: getErrorMessage(err, "Failed to update plan") });
       throw err;
     } finally {
@@ -102,7 +165,6 @@ export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set) 
         error: null,
       }));
     } catch (err: unknown) {
-      console.error("[Store] Failed to delete subscription plan", err);
       set({ error: getErrorMessage(err, "Failed to delete plan") });
       throw err;
     } finally {
@@ -110,22 +172,15 @@ export const useAdminSubscriptionsStore = create<AdminSubscriptionsState>((set) 
     }
   },
 
-  fetchHistory: async (getToken, page = 1, limit = 10) => {
-    set({ loading: true, error: null });
+  resolveReconciliation: async (getToken, id, planId) => {
     try {
       const token = await getToken();
       if (!token) throw new Error("No token provided");
-      const resp = await fetchSubscriptionHistory(token, page, limit);
-      set({
-        history: resp.subscriptions || [],
-        historyTotal: resp.total || 0,
-        error: null,
-      });
+      await resolveSubscriptionReconciliation(token, id, planId);
+      await get().fetchReconciliations(getToken);
     } catch (err: unknown) {
-      console.error("[Store] Failed to fetch subscription history", err);
-      set({ error: getErrorMessage(err, "Failed to fetch subscription history") });
-    } finally {
-      set({ loading: false });
+      set({ error: getErrorMessage(err, "Failed to resolve reconciliation") });
+      throw err;
     }
   },
 }));

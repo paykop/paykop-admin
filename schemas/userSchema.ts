@@ -129,7 +129,6 @@ export interface UpdateUserRequest {
   first_name?: string;
   last_name?: string;
   address?: string;
-  role?: string;
   is_onboarded?: boolean;
   has_subscription?: boolean;
   kyc_status?: string;

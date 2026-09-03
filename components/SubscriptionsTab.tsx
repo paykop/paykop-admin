@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useUserStore } from "../store/useUserStore";
 import { isAdmin } from "@/lib/rbac";
+import { useAdminSubscriptionsStore } from "../store/useAdminSubscriptionsStore";
 import { Card, CardContent } from "./ui/card";
 import {
   Dialog,
@@ -16,16 +17,7 @@ import {
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Plus, Check, Trash2, Loader2, Edit } from "lucide-react";
-import {
-  fetchSubscriptionPlans,
-  createSubscriptionPlan,
-  updateSubscriptionPlan,
-  deleteSubscriptionPlan,
-  fetchSubscriptionHistory,
-  fetchSubscriptionReconciliations,
-  resolveSubscriptionReconciliation,
-} from "../services/subscriptionService";
-import { SubscriptionPlan, ReconciliationItem, SubscriptionHistoryItem } from "../schemas/subscriptionSchema";
+import { SubscriptionPlan } from "../schemas/subscriptionSchema";
 import { toast } from "./ui/toast";
 import { getErrorMessage } from "../lib/errors";
 
@@ -36,113 +28,69 @@ export default function SubscriptionsTab() {
   const backendUser = useUserStore((s) => s.backendUser);
   const canManagePlans = isAdmin(backendUser?.role);
 
+  const {
+    plans,
+    history,
+    reconciliations,
+    loading,
+    fetchPlans,
+    fetchHistory,
+    fetchReconciliations,
+    createPlan,
+    updatePlan,
+    deletePlan,
+    resolveReconciliation,
+  } = useAdminSubscriptionsStore();
+
   const [panel, setPanel] = useState<Panel>("plans");
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [items, setItems] = useState<ReconciliationItem[]>([]);
-  const [history, setHistory] = useState<SubscriptionHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editPlan, setEditPlan] = useState<SubscriptionPlan | null>(null);
   const [newPlan, setNewPlan] = useState({ name: "", price: "", duration_days: "30" });
   const [resolvePlanId, setResolvePlanId] = useState<Record<number, string>>({});
   const [processingId, setProcessingId] = useState<number | null>(null);
 
-  const loadPlans = async () => {
-    try {
-      setLoading(true);
-      const token = await getToken();
-      if (!token) return;
-      const data = await fetchSubscriptionPlans(token);
-      setPlans(data);
-    } catch (err) {
-      console.error("Failed to fetch plans:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadReconciliations = async () => {
-    try {
-      setLoading(true);
-      const token = await getToken();
-      if (!token) return;
-      const [data, planData] = await Promise.all([
-        fetchSubscriptionReconciliations(token),
-        plans.length === 0 ? fetchSubscriptionPlans(token) : Promise.resolve(plans),
-      ]);
-      setItems(data.items || []);
-      if (plans.length === 0) setPlans(planData);
-    } catch (err) {
-      console.error("Failed to fetch reconciliations:", err);
-      toast.error("Failed to load reconciliation queue.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
+    const load = async () => {
       try {
-        const token = await getToken();
-        if (cancelled || !token) return;
-
         if (panel === "plans") {
-          const data = await fetchSubscriptionPlans(token);
-          if (!cancelled) setPlans(data);
+          await fetchPlans(getToken);
         } else if (panel === "history") {
-          const data = await fetchSubscriptionHistory(token);
-          if (!cancelled) setHistory(data.subscriptions || []);
+          await fetchHistory(getToken);
         } else {
-          const needPlans = plans.length === 0;
-          const [data, planData] = await Promise.all([
-            fetchSubscriptionReconciliations(token),
-            needPlans ? fetchSubscriptionPlans(token) : Promise.resolve(plans),
-          ]);
-          if (cancelled) return;
-          setItems(data.items || []);
-          if (needPlans) setPlans(planData);
+          if (plans.length === 0) await fetchPlans(getToken);
+          await fetchReconciliations(getToken);
         }
       } catch (err) {
-        console.error(err);
         if (panel === "history") toast.error("Failed to load subscription history.");
         if (panel === "reconciliation") toast.error("Failed to load reconciliation queue.");
-      } finally {
-        if (!cancelled) setLoading(false);
+        console.error(err);
       }
-    })();
-
-    return () => {
-      cancelled = true;
     };
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getToken, panel]);
 
   const switchPanel = (next: Panel) => {
-    setLoading(true);
     setPanel(next);
   };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canManagePlans || !newPlan.name || !newPlan.price || !newPlan.duration_days) return;
 
     try {
-      const token = await getToken();
-      if (!token) return;
-
       const priceInPaise = Math.round(parseFloat(newPlan.price) * 100);
       const durationDays = parseInt(newPlan.duration_days, 10);
 
       if (editPlan) {
-        await updateSubscriptionPlan(token, editPlan.id, {
+        await updatePlan(getToken, editPlan.id, {
           name: newPlan.name,
           price: priceInPaise,
           duration_days: durationDays,
         });
         toast.success("Plan updated.");
       } else {
-        await createSubscriptionPlan(token, {
+        await createPlan(getToken, {
           name: newPlan.name,
           price: priceInPaise,
           duration_days: durationDays,
@@ -154,10 +102,9 @@ export default function SubscriptionsTab() {
       setNewPlan({ name: "", price: "", duration_days: "30" });
       setEditPlan(null);
       setModalOpen(false);
-      loadPlans();
     } catch (err) {
       console.error("Failed to save plan:", err);
-      alert("Error saving plan");
+      toast.error(getErrorMessage(err, "Error saving plan"));
     }
   };
 
@@ -175,13 +122,9 @@ export default function SubscriptionsTab() {
     if (!canManagePlans) return;
     if (!confirm("Are you sure you want to deactivate/delete this subscription plan?")) return;
     try {
-      const token = await getToken();
-      if (!token) return;
-      await deleteSubscriptionPlan(token, id);
+      await deletePlan(getToken, id);
       toast.success("Subscription plan deleted successfully!");
-      loadPlans();
     } catch (err: unknown) {
-      console.error("Failed to delete plan:", err);
       const msg = getErrorMessage(err, "");
       if (msg.includes("in use") || msg.includes("cannot be modified or deleted")) {
         toast.error(
@@ -203,11 +146,8 @@ export default function SubscriptionsTab() {
     }
     setProcessingId(id);
     try {
-      const token = await getToken();
-      if (!token) return;
-      await resolveSubscriptionReconciliation(token, id, planId);
+      await resolveReconciliation(getToken, id, planId);
       toast.success("Reconciliation resolved successfully.");
-      loadReconciliations();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, "Failed to resolve reconciliation."));
     } finally {
@@ -215,7 +155,7 @@ export default function SubscriptionsTab() {
     }
   };
 
-  if (loading && plans.length === 0 && items.length === 0 && history.length === 0) {
+  if (loading && plans.length === 0 && reconciliations.length === 0 && history.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -421,7 +361,7 @@ export default function SubscriptionsTab() {
         </div>
       ) : (
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          {items.length === 0 ? (
+          {reconciliations.length === 0 ? (
             <div className="p-10 text-center text-slate-500 text-sm">No unresolved reconciliation items.</div>
           ) : (
             <div className="overflow-x-auto">
@@ -436,7 +376,7 @@ export default function SubscriptionsTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-slate-100">
-                  {items.map((item) => (
+                  {reconciliations.map((item) => (
                     <TableRow key={item.id} className="hover:bg-slate-50/50 border-b border-slate-100">
                       <TableCell className="p-4 pl-6 font-mono text-[11px] text-slate-700">
                         {item.user_id || "—"}

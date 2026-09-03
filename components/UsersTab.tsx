@@ -29,7 +29,7 @@ export default function UsersTab() {
   const canManageUsers = isAdmin(backendUser?.role);
   const {
     users, loading, fetchAdminUsers, suspendAdminUser, verifyAdminUser,
-    selectedUser, detailsLoading, fetchUserDetail, updateUserDetails, clearSelectedUser,
+    selectedUser, detailsLoading, fetchUserDetail, updateUserDetails, updateUserRoleAction, clearSelectedUser,
   } = useAdminUsersStore();
 
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -67,7 +67,12 @@ export default function UsersTab() {
       const payload: UpdateUserRequest = { first_name: editForm.first_name, last_name: editForm.last_name };
       const newRole = editForm.role?.trim().toLowerCase();
       const oldRole = selectedUser.role?.trim().toLowerCase();
-      if (newRole && newRole !== oldRole) {
+      const nameChanged =
+        editForm.first_name !== selectedUser.first_name ||
+        editForm.last_name !== selectedUser.last_name;
+      const roleChanged = Boolean(newRole && newRole !== oldRole);
+
+      if (roleChanged) {
         if (!canChangeRoles) {
           alert("Only admins can change user roles.");
           return;
@@ -80,9 +85,16 @@ export default function UsersTab() {
           alert("Cannot promote users to admin via this screen.");
           return;
         }
-        payload.role = newRole;
+        await updateUserRoleAction(getToken, selectedUser.id, newRole!);
       }
-      await updateUserDetails(getToken, selectedUser.id, payload);
+
+      if (nameChanged) {
+        await updateUserDetails(getToken, selectedUser.id, payload);
+      } else if (roleChanged) {
+        await fetchUserDetail(getToken, selectedUser.id);
+        await fetchAdminUsers(getToken, roleFilter === "all" ? undefined : roleFilter);
+      }
+
       setEditModalOpen(false);
       clearSelectedUser();
     } finally {

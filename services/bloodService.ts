@@ -28,8 +28,7 @@ export async function fetchBloodRequests(
     params.status = status;
   }
 
-  const headers: Record<string, string> = {};return apiRequest("/api/v1/admin/blood", bloodRequestListResponseSchema, {
-    headers,
+  return apiRequest("/api/v1/admin/blood", bloodRequestListResponseSchema, {
     params,
   });
 }
@@ -42,9 +41,8 @@ export async function updateBloodRequestStatus(
   id: string | number,
   status: string
 ): Promise<BloodRequestItem> {
-  const headers: Record<string, string> = {};return apiRequest(`/api/v1/admin/blood/${id}/status`, bloodRequestItemSchema, {
+  return apiRequest(`/api/v1/admin/blood/${id}/status`, bloodRequestItemSchema, {
     method: "PUT",
-    headers,
     body: JSON.stringify({ status }),
   });
 }
@@ -57,9 +55,8 @@ export async function updateBloodRequest(
   id: string | number,
   data: Record<string, unknown>
 ): Promise<BloodRequestItem> {
-  const headers: Record<string, string> = {};return apiRequest(`/api/v1/admin/blood/${id}`, bloodRequestItemSchema, {
+  return apiRequest(`/api/v1/admin/blood/${id}`, bloodRequestItemSchema, {
     method: "PUT",
-    headers,
     body: JSON.stringify(data),
   });
 }
@@ -71,12 +68,11 @@ export async function deleteBloodRequest(
   token: string | undefined,
   id: string | number
 ): Promise<{ message: string }> {
-  const headers: Record<string, string> = {};return apiRequest(
+  return apiRequest(
     `/api/v1/admin/blood/${id}`,
     z.object({ message: z.string() }),
     {
       method: "DELETE",
-      headers,
     }
   );
 }
@@ -99,8 +95,7 @@ export async function fetchStandingDonors(
     params.only_available = filters.only_available ? "true" : "false";
   }
 
-  const headers: Record<string, string> = {};return apiRequest("/api/v1/donations/blood/donors", donorListResponseSchema, {
-    headers,
+  return apiRequest("/api/v1/donations/blood/donors", donorListResponseSchema, {
     params,
   });
 }
@@ -112,7 +107,6 @@ export async function fetchMatchingDonors(
   token: string | undefined,
   requestId: string | number
 ): Promise<MatchingDonorsResponse> {
-  const headers: Record<string, string> = {};return apiRequest(`/api/v1/donations/blood/${requestId}/matching-donors`, matchingDonorsResponseSchema, {
-    headers,
+  return apiRequest(`/api/v1/donations/blood/${requestId}/matching-donors`, matchingDonorsResponseSchema, {
   });
 }
