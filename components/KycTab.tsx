@@ -95,6 +95,32 @@ export default function KycTab() {
     return map[status] || "bg-slate-100 text-slate-600 border-slate-200";
   };
 
+  const sellerDisplayName = (s: {
+    seller_name?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+  }) => {
+    const fromParts = `${s.first_name || ""} ${s.last_name || ""}`.trim();
+    return (s.seller_name || "").trim() || fromParts || "—";
+  };
+
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) return "—";
+    return new Date(dateStr).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const submittedLabel = (status: string, submittedAt?: string | null) => {
+    if (submittedAt) return formatDate(submittedAt);
+    if (status === "draft") return "Not submitted";
+    return "—";
+  };
+
   return (
     <div className="space-y-6">
       <RoleAccessBanner />
@@ -150,6 +176,7 @@ export default function KycTab() {
                   <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Kind</TableHead>
                   <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">GSTIN / PAN</TableHead>
                   <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Status</TableHead>
+                  <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Submitted</TableHead>
                   <TableHead className="p-4 pr-6 text-right text-slate-400 font-bold uppercase tracking-wider text-[10px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -157,7 +184,8 @@ export default function KycTab() {
                 {submissions.map((s) => (
                   <TableRow key={s.id} className="hover:bg-slate-50/50 border-b border-slate-100">
                     <TableCell className="p-4 pl-6">
-                      <div className="font-mono text-[11px] text-slate-700">{s.seller_user_id}</div>
+                      <div className="font-semibold text-slate-800">{sellerDisplayName(s)}</div>
+                      <div className="font-mono text-[10px] text-slate-400 mt-0.5">{s.seller_user_id}</div>
                       <div className="text-[10px] text-slate-400">ID: {s.id}</div>
                     </TableCell>
                     <TableCell className="p-4 capitalize font-semibold text-slate-600">
@@ -176,6 +204,9 @@ export default function KycTab() {
                           <span className="text-[10px] text-slate-400">Not submitted by seller yet</span>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell className="p-4 text-slate-500">
+                      {submittedLabel(s.status, s.submitted_at)}
                     </TableCell>
                     <TableCell className="p-4 pr-6 text-right">
                       {processingId === s.id ? (
@@ -241,7 +272,8 @@ export default function KycTab() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <p className="text-slate-400 font-bold uppercase text-[10px]">Seller</p>
-                  <p className="font-mono text-slate-800 mt-0.5">{selected.seller_user_id}</p>
+                  <p className="font-semibold text-slate-800 mt-0.5">{sellerDisplayName(selected)}</p>
+                  <p className="font-mono text-[10px] text-slate-400 mt-0.5">{selected.seller_user_id}</p>
                 </div>
                 <div>
                   <p className="text-slate-400 font-bold uppercase text-[10px]">Status</p>
@@ -253,6 +285,10 @@ export default function KycTab() {
                       Documents uploaded but not submitted for review. Ask the seller to tap Submit in the app, then approve here when status becomes pending.
                     </p>
                   )}
+                </div>
+                <div>
+                  <p className="text-slate-400 font-bold uppercase text-[10px]">Submitted</p>
+                  <p className="mt-0.5 text-slate-700">{submittedLabel(selected.status, selected.submitted_at)}</p>
                 </div>
                 <div>
                   <p className="text-slate-400 font-bold uppercase text-[10px]">GSTIN</p>

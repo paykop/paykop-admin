@@ -37,10 +37,12 @@ export const kycListFixture = {
     {
       id: 1,
       seller_user_id: "seller-1",
+      seller_name: "Ada Seller",
       status: "pending",
       gstin: "22AAAAA0000A1Z5",
       pan: "ABCDE1234F",
       documents: [],
+      submitted_at: "2026-01-01T10:30:00Z",
     },
   ],
   total: 1,

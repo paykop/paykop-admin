@@ -20,6 +20,10 @@ export const kycSubmissionSchema = z.object({
   rejection_reason: z.string().optional().nullable(),
   reviewed_by: z.string().optional().nullable(),
   reviewed_at: z.string().optional().nullable(),
+  submitted_at: z.string().optional().nullable(),
+  seller_name: z.string().optional().nullable(),
+  first_name: z.string().optional().nullable(),
+  last_name: z.string().optional().nullable(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 }).passthrough();

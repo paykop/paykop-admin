@@ -17,4 +17,6 @@ test("kyc tab renders submissions from proxied API contract", async ({ page, con
 
   await page.goto("/kyc");
   await expect(page.getByText(/pending/i).first()).toBeVisible();
+  await expect(page.getByText("Ada Seller")).toBeVisible();
+  await expect(page.getByText(/1 Jan 2026/i).first()).toBeVisible();
 });
