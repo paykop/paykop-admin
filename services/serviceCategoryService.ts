@@ -13,7 +13,7 @@ import {
 /**
  * Fetch all service categories (Admin)
  */
-export async function fetchAdminServiceCategories(token: string): Promise<ServiceCategoryItem[]> {
+export async function fetchAdminServiceCategories(_token: string): Promise<ServiceCategoryItem[]> {
   return apiRequest("/api/v1/admin/service-categories", serviceCategoryListResponseSchema, {
   });
 }

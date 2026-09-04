@@ -10,7 +10,7 @@ import {
   CommissionBatchDetailResponse,
 } from "../schemas/commerceSchema";
 
-export async function fetchCommerceSettings(token: string): Promise<CommerceSettings> {
+export async function fetchCommerceSettings(_token: string): Promise<CommerceSettings> {
   return apiRequest("/api/v1/admin/commerce/settings", commerceSettingsSchema, {
   });
 }

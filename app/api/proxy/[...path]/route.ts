@@ -8,6 +8,12 @@ const FORWARDED_HEADERS = [
   "accept-language",
 ];
 
+const PUBLIC_PROXY_PATHS = new Set(["health"]);
+
+function isUnsafePath(pathSegments: string[]): boolean {
+  return pathSegments.some((segment) => !segment || segment === "." || segment === "..");
+}
+
 function buildUpstreamUrl(pathSegments: string[], search: string): string {
   const apiUrl = getApiUrl();
   const path = pathSegments.join("/");
@@ -47,7 +53,8 @@ async function proxyRequest(
   request: NextRequest,
   pathSegments: string[],
   accessToken: string | null,
-  retryOnExpired: boolean
+  retryOnExpired: boolean,
+  bodyText: string | null
 ): Promise<NextResponse> {
   const upstreamUrl = buildUpstreamUrl(pathSegments, request.nextUrl.search);
   const headers = pickForwardHeaders(request);
@@ -61,8 +68,8 @@ async function proxyRequest(
     cache: "no-store",
   };
 
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = await request.text();
+  if (bodyText !== null) {
+    init.body = bodyText;
   }
 
   const upstream = await fetch(upstreamUrl, init);
@@ -73,7 +80,7 @@ async function proxyRequest(
   if (retryOnExpired && isTokenExpiredResponse(upstream.status, body)) {
     const newToken = await refreshTokensFromBackend();
     if (newToken) {
-      return proxyRequest(request, pathSegments, newToken, false);
+      return proxyRequest(request, pathSegments, newToken, false, bodyText);
     }
   }
 
@@ -89,8 +96,22 @@ async function proxyRequest(
 
 async function handle(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
+
+  if (isUnsafePath(path)) {
+    return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+  }
+
+  const pathKey = path.join("/");
   const accessToken = await getValidAccessToken();
-  return proxyRequest(request, path, accessToken, true);
+
+  if (!accessToken && !PUBLIC_PROXY_PATHS.has(pathKey)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const bodyText =
+    request.method !== "GET" && request.method !== "HEAD" ? await request.text() : null;
+
+  return proxyRequest(request, path, accessToken, true, bodyText);
 }
 
 export const GET = handle;

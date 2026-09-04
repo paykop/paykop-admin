@@ -10,7 +10,7 @@ import {
 /**
  * Fetch dashboard statistics via /admin/dashboard
  */
-export async function fetchDashboardStats(token: string): Promise<DashboardResponse> {
+export async function fetchDashboardStats(_token: string): Promise<DashboardResponse> {
   return apiRequest("/api/v1/admin/dashboard", dashboardResponseSchema, {
   });
 }
@@ -18,7 +18,7 @@ export async function fetchDashboardStats(token: string): Promise<DashboardRespo
 /**
  * Fetch operational diagnostics via /admin/metrics
  */
-export async function fetchAdminMetrics(token: string): Promise<AdminMetrics> {
+export async function fetchAdminMetrics(_token: string): Promise<AdminMetrics> {
   return apiRequest("/api/v1/admin/metrics", adminMetricsSchema, {
   });
 }

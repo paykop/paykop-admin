@@ -153,6 +153,7 @@ export default function SignInPage() {
     try {
       setLoading(true);
       await verifyAdminOtp(email.trim().toLowerCase(), fullOtp);
+      await refreshSession();
 
       // Verify staff role via profile
       const user = await fetchProfile();

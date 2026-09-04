@@ -6,10 +6,10 @@ import {
   getApiUrl,
 } from "@/lib/auth/server";
 
-async function revokeOnBackend(): Promise<void> {
+async function revokeOnBackend(): Promise<boolean> {
   const accessToken = await getAccessTokenFromCookies();
   const refreshToken = await getRefreshTokenFromCookies();
-  if (!accessToken || !refreshToken) return;
+  if (!accessToken && !refreshToken) return false;
 
   const apiUrl = getApiUrl();
   const endpoints = [
@@ -19,27 +19,34 @@ async function revokeOnBackend(): Promise<void> {
 
   for (const endpoint of endpoints) {
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+      }
+
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+        headers,
+        body: JSON.stringify(refreshToken ? { refresh_token: refreshToken } : {}),
         cache: "no-store",
       });
-      if (response.ok) return;
+      if (response.ok) return true;
     } catch {
       // Try fallback endpoint
     }
   }
+
+  return false;
 }
 
 export async function POST() {
+  let revoked = false;
   try {
-    await revokeOnBackend();
+    revoked = await revokeOnBackend();
   } finally {
     await clearAuthCookies();
   }
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, revoked });
 }

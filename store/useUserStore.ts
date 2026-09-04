@@ -6,7 +6,7 @@ import {
   fetchUserPermissions,
 } from "../services/userService";
 import { clearTokens } from "../lib/api/client";
-import { resolveSessionStatus } from "../services/authService";
+import { logoutAdmin, resolveSessionStatus } from "../services/authService";
 import { isStaff } from "../lib/rbac";
 import { getErrorMessage } from "../lib/errors";
 import { ApiError } from "../services/apiService";
@@ -90,7 +90,11 @@ export const useUserStore = create<UserState>((set, get) => ({
         const response = await fetchUserProfile();
 
         if (!isStaff(response.role)) {
-          clearTokens();
+          try {
+            await logoutAdmin();
+          } catch {
+            clearTokens();
+          }
           set({
             backendUser: null,
             permissions: null,
@@ -116,14 +120,26 @@ export const useUserStore = create<UserState>((set, get) => ({
         return response;
       } catch (err: unknown) {
         if (isExpectedAuthFailure(err)) {
-          clearTokens();
-          set({ backendUser: null, permissions: null, error: null });
+          try {
+            await logoutAdmin();
+          } catch {
+            clearTokens();
+          }
+          set({
+            backendUser: null,
+            permissions: null,
+            error: "Your session is no longer valid. Please sign in again.",
+          });
           return null;
         }
 
         console.error("Failed to fetch backend profile:", err);
         if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
-          clearTokens();
+          try {
+            await logoutAdmin();
+          } catch {
+            clearTokens();
+          }
         }
         const errorMsg =
           err instanceof ApiError && err.status === 401

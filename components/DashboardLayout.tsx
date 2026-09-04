@@ -16,7 +16,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const { isLoaded, isSignedIn, sessionStatus, getToken, refreshSession } = useAuth();
+  const { isLoaded, isSignedIn, sessionStatus, getToken, refreshSession, logout } = useAuth();
   const { backendUser, loading, error, fetchProfile } = useUserStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -27,9 +27,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [isLoaded, sessionStatus, router]);
 
   useEffect(() => {
-    if (isLoaded && isSignedIn && !backendUser && !error && !loading) {
-      fetchProfile(getToken);
-    }
+    if (!isLoaded || !isSignedIn || backendUser || error || loading) return;
+
+    let cancelled = false;
+    fetchProfile(getToken).then((user) => {
+      if (cancelled) return;
+      if (!user && !useUserStore.getState().error) {
+        useUserStore.setState({
+          error: "Could not load your admin profile. Sign in again or retry.",
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isLoaded, isSignedIn, backendUser, error, loading, fetchProfile, getToken]);
 
   if (!isLoaded) {
@@ -81,7 +93,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   }
 
-  if (error) {
+  if (error || !backendUser) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="w-full max-w-md p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl text-center space-y-4">
@@ -89,12 +101,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <ShieldAlert className="w-6 h-6" />
           </div>
           <h2 className="text-lg font-bold text-white tracking-tight">Access Control Warning</h2>
-          <p className="text-xs text-slate-400 leading-normal">{error}</p>
+          <p className="text-xs text-slate-400 leading-normal">
+            {error || "Could not load your admin profile. Sign in again or retry."}
+          </p>
           <button
-            onClick={() => fetchProfile(getToken)}
+            onClick={() => {
+              useUserStore.setState({ error: null });
+              fetchProfile(getToken);
+            }}
             className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl transition text-sm cursor-pointer shadow-lg shadow-blue-500/10"
           >
             Retry Handshake
+          </button>
+          <button
+            onClick={() => logout()}
+            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 px-4 rounded-xl transition text-sm cursor-pointer"
+          >
+            Sign out
           </button>
         </div>
       </div>

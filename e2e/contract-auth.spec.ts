@@ -22,3 +22,12 @@ test("devtools page is admin-only", async ({ page, context, baseURL }) => {
   await expect(page.getByRole("heading", { name: "Developer Tools", exact: true })).toBeVisible();
   await expect(page.getByText(/admin action console/i)).toBeVisible();
 });
+
+test("unauthenticated proxy admin path returns 401 without upstream relay", async ({
+  request,
+}) => {
+  const response = await request.get("/api/proxy/admin/dashboard");
+  expect(response.status()).toBe(401);
+  const body = await response.json();
+  expect(body).toMatchObject({ error: "Unauthorized" });
+});

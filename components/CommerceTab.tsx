@@ -64,15 +64,18 @@ export default function CommerceTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getToken, page]);
 
-  useEffect(() => {
-    if (!settings) return;
-    setForm({
-      commissionPercent: (settings.default_commission_rate_bps / 100).toFixed(2),
-      settlementPeriod: settings.default_settlement_period as "weekly" | "monthly" | "yearly",
-      tierId: settings.default_commission_tier_id?.toString() || "",
-      onboardingFeeRupees: (settings.default_onboarding_fee / 100).toFixed(2),
-    });
-  }, [settings]);
+  const [prevSettings, setPrevSettings] = useState(settings);
+  if (settings !== prevSettings) {
+    setPrevSettings(settings);
+    if (settings) {
+      setForm({
+        commissionPercent: (settings.default_commission_rate_bps / 100).toFixed(2),
+        settlementPeriod: settings.default_settlement_period as "weekly" | "monthly" | "yearly",
+        tierId: settings.default_commission_tier_id?.toString() || "",
+        onboardingFeeRupees: (settings.default_onboarding_fee / 100).toFixed(2),
+      });
+    }
+  }
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();

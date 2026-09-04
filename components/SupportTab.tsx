@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Loader2, Eye, Plus, UserMinus, Headset } from "lucide-react";
+import { Loader2, Eye, Plus, UserMinus } from "lucide-react";
 import { getErrorMessage } from "../lib/errors";
 
 type CreateMode = "promote" | "create";

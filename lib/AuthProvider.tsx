@@ -30,24 +30,58 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+let authEpoch = 0;
+let sessionCheckInFlight: Promise<SessionStatus> | null = null;
+const authListeners = new Set<() => void>();
+
+function onAuthChange() {
+  authEpoch += 1;
+  sessionCheckInFlight = null;
+  authListeners.forEach((listener) => listener());
+}
+
 function subscribeToAuth(onStoreChange: () => void) {
   if (typeof window === "undefined") return () => {};
-  window.addEventListener("paykop-auth-change", onStoreChange);
+
+  if (authListeners.size === 0) {
+    window.addEventListener("paykop-auth-change", onAuthChange);
+  }
+  authListeners.add(onStoreChange);
   return () => {
-    window.removeEventListener("paykop-auth-change", onStoreChange);
+    authListeners.delete(onStoreChange);
+    if (authListeners.size === 0) {
+      window.removeEventListener("paykop-auth-change", onAuthChange);
+    }
   };
 }
 
-let sessionCheckInFlight: Promise<SessionStatus> | null = null;
+function getAuthEpoch() {
+  return authEpoch;
+}
+
+function getServerAuthEpoch() {
+  return 0;
+}
 
 async function runSessionCheck(): Promise<SessionStatus> {
   if (sessionCheckInFlight) {
     return sessionCheckInFlight;
   }
 
-  sessionCheckInFlight = resolveSessionStatus().finally(() => {
-    sessionCheckInFlight = null;
-  });
+  const epoch = authEpoch;
+  sessionCheckInFlight = resolveSessionStatus()
+    .then((status) => {
+      if (epoch !== authEpoch) {
+        sessionCheckInFlight = null;
+        return runSessionCheck();
+      }
+      return status;
+    })
+    .finally(() => {
+      if (epoch === authEpoch) {
+        sessionCheckInFlight = null;
+      }
+    });
 
   return sessionCheckInFlight;
 }
@@ -55,7 +89,7 @@ async function runSessionCheck(): Promise<SessionStatus> {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
-  const authVersion = useSyncExternalStore(subscribeToAuth, () => 0, () => 0);
+  const authVersion = useSyncExternalStore(subscribeToAuth, getAuthEpoch, getServerAuthEpoch);
   const backendUser = useUserStore((state) => state.backendUser);
 
   const applySessionStatus = useCallback((status: SessionStatus) => {

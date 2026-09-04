@@ -80,7 +80,7 @@ export async function fetchSubscriptionHistory(
 /**
  * Fetch all registered subscription plans (Admin)
  */
-export async function fetchSubscriptionPlans(token: string): Promise<SubscriptionPlan[]> {
+export async function fetchSubscriptionPlans(_token: string): Promise<SubscriptionPlan[]> {
   return apiRequest("/api/v1/admin/subscriptions/plans", z.array(subscriptionPlanSchema), {
   });
 }

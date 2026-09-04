@@ -13,7 +13,7 @@ import {
 /**
  * Fetch all product categories & subcategories (Admin)
  */
-export async function fetchAdminProductCategories(token: string): Promise<ProductCategoryItem[]> {
+export async function fetchAdminProductCategories(_token: string): Promise<ProductCategoryItem[]> {
   return apiRequest("/api/v1/admin/categories", productCategoryListResponseSchema, {
   });
 }

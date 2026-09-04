@@ -35,7 +35,7 @@ export async function markNotificationAsRead(token: string, id: number): Promise
 /**
  * Mark all in-app notifications as read (PATCH /api/v1/notifications/read-all)
  */
-export async function markAllNotificationsAsRead(token: string): Promise<NotificationActionResponse> {
+export async function markAllNotificationsAsRead(_token: string): Promise<NotificationActionResponse> {
   return apiRequest("/api/v1/notifications/read-all", notificationActionResponseSchema, {
     method: "PATCH",
   });
