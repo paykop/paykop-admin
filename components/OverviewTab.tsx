@@ -11,14 +11,21 @@ import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
 import { Button } from "./ui/button";
 import { Users, TrendingUp, Heart, CreditCard, ArrowRight, Loader2, Activity } from "lucide-react";
+import { useTour } from "@/lib/tour/useTour";
+import { useUserStore } from "../store/useUserStore";
 
 export default function OverviewTab() {
   const router = useRouter();
   const { getToken } = useAuth();
+  const backendUser = useUserStore((s) => s.backendUser);
 
   const { data, loading, fetchDashboard } = useDashboardStore();
   const [metricsData, setMetricsData] = useState<AdminMetrics | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
+
+  useTour("admin-overview", {
+    ready: backendUser?.role === "admin" && !loading && !metricsLoading,
+  });
 
   useEffect(() => {
     fetchDashboard(getToken);
@@ -113,7 +120,7 @@ export default function OverviewTab() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="overview-metrics">
         {metricCards.map((m, i) => {
           const Icon = m.icon;
           return (

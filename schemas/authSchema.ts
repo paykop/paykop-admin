@@ -8,7 +8,11 @@ export const otpRequestSchema = z.object({
 export const otpRequestResponseSchema = z.object({
   message: z.string().optional(),
   status: z.string().optional(),
+  otp: z.string().optional(),
+  debug_otp: z.string().optional(),
 }).passthrough();
+
+export type OtpRequestResponse = z.infer<typeof otpRequestResponseSchema>;
 
 export const otpVerifyResponseSchema = z.object({
   access_token: z.string(),

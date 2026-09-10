@@ -26,6 +26,7 @@ export default defineConfig({
     timeout: 120000,
     env: {
       API_URL: "http://localhost:8080",
+      NEXT_PUBLIC_DISABLE_TOURS: "true",
     },
   },
   projects: [

@@ -136,7 +136,7 @@ export default function DashboardSidebar({ mobileOpen = false, onClose }: Dashbo
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-4 pb-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-4 pb-4 space-y-1" data-tour="sidebar-nav">
           {visibleNav.map((item) => {
             const Icon = item.icon;
             const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);

@@ -31,6 +31,7 @@ export default function SignInPage() {
   const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendCountdown, setResendCountdown] = useState(0);
@@ -91,12 +92,25 @@ export default function SignInPage() {
 
     try {
       setLoading(true);
-      await requestAdminOtp(trimmedEmail);
-      toast.success("Authentication code sent to your email!");
+      const res = await requestAdminOtp(trimmedEmail);
+      const returnedOtp = res.otp || res.debug_otp;
+      if (returnedOtp && /^\d{6}$/.test(returnedOtp)) {
+        setDevOtp(returnedOtp);
+        setOtp(returnedOtp.split(""));
+        toast.success(`Security code: ${returnedOtp}`, undefined, 8000);
+      } else if (res.message) {
+        toast.success(res.message);
+      } else {
+        toast.success("Authentication code sent to your email!");
+      }
       setStep("otp");
       setResendCountdown(60);
       setTimeout(() => {
-        otpInputsRef.current[0]?.focus();
+        if (returnedOtp && /^\d{6}$/.test(returnedOtp)) {
+          otpInputsRef.current[5]?.focus();
+        } else {
+          otpInputsRef.current[0]?.focus();
+        }
       }, 100);
     } catch (err: unknown) {
       console.error("Failed to request OTP:", err);
@@ -185,11 +199,22 @@ export default function SignInPage() {
 
     try {
       setLoading(true);
-      await requestAdminOtp(email.trim().toLowerCase());
-      toast.success("A fresh security code has been sent.");
+      const res = await requestAdminOtp(email.trim().toLowerCase());
+      const returnedOtp = res.otp || res.debug_otp;
+      if (returnedOtp && /^\d{6}$/.test(returnedOtp)) {
+        setDevOtp(returnedOtp);
+        setOtp(returnedOtp.split(""));
+        toast.success(`Fresh code: ${returnedOtp}`);
+      } else if (res.message) {
+        toast.success(res.message);
+      } else {
+        toast.success("A fresh security code has been sent.");
+      }
       setResendCountdown(60);
-      setOtp(["", "", "", "", "", ""]);
-      otpInputsRef.current[0]?.focus();
+      if (!returnedOtp) {
+        setOtp(["", "", "", "", "", ""]);
+        otpInputsRef.current[0]?.focus();
+      }
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to resend code."));
     } finally {
@@ -317,6 +342,25 @@ export default function SignInPage() {
                 </p>
               </div>
 
+              {/* Dev / Echoed OTP Helper Banner */}
+              {devOtp && (
+                <div className="p-3 rounded-xl bg-blue-950/60 border border-blue-500/30 text-blue-200 text-xs flex items-center justify-between animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                    <span>
+                      Dev Code: <strong className="font-mono text-white text-sm tracking-wider">{devOtp}</strong>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOtp(devOtp.split(""))}
+                    className="text-blue-400 hover:text-blue-200 underline font-bold text-[11px] cursor-pointer shrink-0"
+                  >
+                    Auto-fill
+                  </button>
+                </div>
+              )}
+
               {/* 6 Digit Input Group */}
               <div className="flex justify-between gap-1.5 sm:gap-2">
                 {otp.map((digit, idx) => (
@@ -363,6 +407,7 @@ export default function SignInPage() {
                   onClick={() => {
                     setStep("email");
                     setOtp(["", "", "", "", "", ""]);
+                    setDevOtp(null);
                     setError(null);
                   }}
                   className="hover:text-slate-200 transition cursor-pointer"

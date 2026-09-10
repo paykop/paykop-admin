@@ -130,7 +130,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       <main className="flex-1 overflow-y-auto max-h-screen flex flex-col min-w-0">
         <header className="h-14 md:h-16 border-b border-slate-200 bg-white/80 backdrop-blur px-4 md:px-8 flex items-center justify-between sticky top-0 z-30 shrink-0 shadow-sm gap-3">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0" data-tour="header-handshake">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
@@ -147,7 +147,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               Live
             </span>
           </div>
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-4 shrink-0" data-tour="header-notifications">
             <NotificationPopover />
           </div>
         </header>

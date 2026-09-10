@@ -21,6 +21,7 @@ import { toast } from "./ui/toast";
 import { TICKET_STATUSES } from "../schemas/ticketSchema";
 import { formatTicketStatusLabel } from "@/lib/tickets/mapTicket";
 import { getErrorMessage } from "../lib/errors";
+import { useTour } from "@/lib/tour/useTour";
 
 export default function TicketsTab() {
   const { getToken } = useAuth();
@@ -40,6 +41,10 @@ export default function TicketsTab() {
     reply,
     clearSelected,
   } = useAdminTicketsStore();
+
+  useTour("support-tickets", {
+    ready: !loading && tickets.length > 0,
+  });
 
   const [viewOpen, setViewOpen] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -129,7 +134,7 @@ export default function TicketsTab() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-wrap gap-2 items-center" data-tour="tickets-filter-bar">
         {(["all", ...TICKET_STATUSES] as const).map((status) => (
           <Button
             key={status}
@@ -180,7 +185,7 @@ export default function TicketsTab() {
         </div>
       )}
 
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden" data-tour="tickets-list">
         {loading && tickets.length === 0 ? (
           <div className="flex justify-center items-center h-48">
             <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
