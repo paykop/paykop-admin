@@ -17,7 +17,7 @@ npm run sync:matrix
 - [ ] OTP request / verify via `/sign-in`
 - [ ] Session cookie gate (`/api/auth/session`)
 - [ ] Proxy attaches Bearer; refresh on TOKEN_EXPIRED
-- [ ] Logout clears cookies and revokes on Go
+- [x] Logout clears cookies and revokes on Go
 
 ## Users (`/users`)
 

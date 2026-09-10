@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getApiUrl, getValidAccessToken, refreshTokensFromBackend } from "@/lib/auth/server";
+import { getApiUrl, getApiV1Url, getValidAccessToken, refreshTokensFromBackend } from "@/lib/auth/server";
 
 const FORWARDED_HEADERS = [
   "content-type",
@@ -15,15 +15,14 @@ function isUnsafePath(pathSegments: string[]): boolean {
 }
 
 function buildUpstreamUrl(pathSegments: string[], search: string): string {
-  const apiUrl = getApiUrl();
   const path = pathSegments.join("/");
 
   if (path === "health") {
+    const apiUrl = getApiUrl();
     return `${apiUrl}/health${search}`;
   }
 
-  const base = apiUrl.endsWith("/api/v1") ? apiUrl : `${apiUrl}/api/v1`;
-  return `${base}/${path}${search}`;
+  return `${getApiV1Url()}/${path}${search}`;
 }
 
 function pickForwardHeaders(request: NextRequest): Record<string, string> {

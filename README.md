@@ -75,7 +75,7 @@ Set `API_URL` (default `http://localhost:8080`) and optionally `ADMIN_ACCESS_TOK
 
 - [ ] Set `API_URL` to production Go API
 - [ ] HTTPS enabled (required for `Secure` cookies)
-- [ ] Confirm Go exposes `/api/v1/admin/auth/logout` for server-side refresh revocation
+- [x] Confirm Go exposes `/api/v1/admin/auth/logout` for server-side refresh revocation
 - [ ] Set `NEXT_PUBLIC_ALLOWED_IMAGE_HOSTS` to your CDN domains
 - [ ] Run `npm run build` and `npm run test:e2e` before deploy
 

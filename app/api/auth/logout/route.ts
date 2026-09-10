@@ -3,7 +3,7 @@ import {
   clearAuthCookies,
   getAccessTokenFromCookies,
   getRefreshTokenFromCookies,
-  getApiUrl,
+  getApiV1Url,
 } from "@/lib/auth/server";
 
 async function revokeOnBackend(): Promise<boolean> {
@@ -11,10 +11,10 @@ async function revokeOnBackend(): Promise<boolean> {
   const refreshToken = await getRefreshTokenFromCookies();
   if (!accessToken && !refreshToken) return false;
 
-  const apiUrl = getApiUrl();
+  const apiV1Url = getApiV1Url();
   const endpoints = [
-    `${apiUrl}/api/v1/admin/auth/logout`,
-    `${apiUrl}/api/v1/auth/logout`,
+    `${apiV1Url}/admin/auth/logout`,
+    `${apiV1Url}/auth/logout`,
   ];
 
   for (const endpoint of endpoints) {

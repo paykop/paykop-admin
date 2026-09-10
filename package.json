@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
+    "test:session": "tsx --test lib/auth/server.test.ts",
     "sync:auth": "tsx scripts/sync/auth-smoke.ts",
     "sync:schemas": "tsx scripts/sync/schema-validate.ts",
     "sync:schemas:live": "tsx scripts/sync/schema-validate.ts --live",
@@ -15,7 +16,7 @@
     "sync:matrix:live": "tsx scripts/sync/feature-matrix.ts",
     "sync:crosscheck": "tsx scripts/sync/go-crosscheck.ts",
     "sync:deploy": "tsx scripts/sync/deploy-verify.ts",
-    "sync:all": "npm run sync:deploy && npm run sync:auth && npm run sync:schemas && npm run sync:crosscheck"
+    "sync:all": "npm run test:session && npm run sync:deploy && npm run sync:auth && npm run sync:schemas && npm run sync:crosscheck"
   },
   "dependencies": {
     "axios": "^1.18.1",

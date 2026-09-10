@@ -63,6 +63,17 @@ async function main() {
     })
   );
 
+  results.push(
+    await check("Go API auth logout route exists", async () => {
+      const res = await fetch(`${API_URL}/api/v1/admin/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: "smoke-test-token" }),
+      });
+      if (res.status === 404) throw new Error("Route not found (404)");
+    })
+  );
+
   if (ADMIN_TOKEN) {
     results.push(
       await check("GET /api/v1/auth/me with token", async () => {

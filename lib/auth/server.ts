@@ -1,14 +1,103 @@
 import { cookies } from "next/headers";
+import crypto from "crypto";
 
 export const ACCESS_TOKEN_COOKIE = "access_token";
 export const REFRESH_TOKEN_COOKIE = "refresh_token";
 
 const DEFAULT_ACCESS_MAX_AGE = 86400;
-const DEFAULT_REFRESH_MAX_AGE = 604800;
+const DEFAULT_REFRESH_MAX_AGE = 86400; // 24 hours (Track S staff session limit)
+
+const inFlightRefreshes = new Map<string, Promise<string | null>>();
+
+export function hashToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+export function getInFlightRefreshesCount(): number {
+  return inFlightRefreshes.size;
+}
+
+export interface TokenRefreshOptions {
+  apiUrl?: string;
+  onSuccess?: (accessToken: string, refreshToken: string, expiresIn?: number) => Promise<void>;
+  onFailure?: () => Promise<void>;
+  fetchFn?: typeof fetch;
+}
+
+export async function performTokenRefresh(
+  refreshToken: string,
+  options?: TokenRefreshOptions
+): Promise<string | null> {
+  const tokenKey = hashToken(refreshToken);
+  const existing = inFlightRefreshes.get(tokenKey);
+  if (existing) {
+    return existing;
+  }
+
+  const apiUrl = options?.apiUrl ?? getApiV1Url();
+  const fetchFn = options?.fetchFn ?? fetch;
+  const onSuccess = options?.onSuccess ?? setAuthCookies;
+  const onFailure = options?.onFailure ?? clearAuthCookies;
+
+  const refreshPromise = (async () => {
+    try {
+      const response = await fetchFn(`${apiUrl}/admin/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        await onFailure();
+        return null;
+      }
+
+      const data = (await response.json()) as {
+        access_token?: string;
+        refresh_token?: string;
+        expires_in?: number;
+      };
+
+      // Strict contract enforcement: both access_token AND refresh_token must be present.
+      // Never fall back to the stale old token under single-use rotation.
+      if (!data.access_token || !data.refresh_token) {
+        await onFailure();
+        return null;
+      }
+
+      await onSuccess(
+        data.access_token,
+        data.refresh_token,
+        data.expires_in
+      );
+
+      return data.access_token;
+    } catch {
+      return null;
+    } finally {
+      inFlightRefreshes.delete(tokenKey);
+    }
+  })();
+
+  inFlightRefreshes.set(tokenKey, refreshPromise);
+  return refreshPromise;
+}
+
+export async function refreshTokensFromBackend(): Promise<string | null> {
+  const refreshToken = await getRefreshTokenFromCookies();
+  if (!refreshToken) return null;
+  return performTokenRefresh(refreshToken);
+}
 
 export function getApiUrl(): string {
   const raw = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
   return raw.replace(/\/$/, "");
+}
+
+export function getApiV1Url(): string {
+  const raw = getApiUrl();
+  return raw.endsWith("/api/v1") ? raw : `${raw}/api/v1`;
 }
 
 function cookieOptions(maxAge: number) {
@@ -61,41 +150,6 @@ export function isTokenExpired(token: string): boolean {
   } catch {
     return false;
   }
-}
-
-export async function refreshTokensFromBackend(): Promise<string | null> {
-  const refreshToken = await getRefreshTokenFromCookies();
-  if (!refreshToken) return null;
-
-  const apiUrl = getApiUrl();
-  const refreshEndpoint = apiUrl.endsWith("/api/v1")
-    ? `${apiUrl}/admin/auth/refresh`
-    : `${apiUrl}/api/v1/admin/auth/refresh`;
-
-  const response = await fetch(refreshEndpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-    cache: "no-store",
-  });
-
-  if (!response.ok) return null;
-
-  const data = (await response.json()) as {
-    access_token?: string;
-    refresh_token?: string;
-    expires_in?: number;
-  };
-
-  if (!data.access_token) return null;
-
-  await setAuthCookies(
-    data.access_token,
-    data.refresh_token || refreshToken,
-    data.expires_in
-  );
-
-  return data.access_token;
 }
 
 export async function getValidAccessToken(): Promise<string | null> {
