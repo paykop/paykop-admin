@@ -32,7 +32,17 @@ export async function createAdminProductCategory(
 }
 
 /**
- * Full/partial update of a product category (Admin)
+ * Fetch a single product category by ID (Admin)
+ */
+export async function fetchAdminProductCategory(
+  _token: string,
+  id: number
+): Promise<ProductCategoryItem> {
+  return apiRequest(`/api/v1/admin/categories/${id}`, productCategoryItemSchema);
+}
+
+/**
+ * Full update of a product category (Admin)
  */
 export async function updateAdminProductCategory(
   token: string,
@@ -41,6 +51,20 @@ export async function updateAdminProductCategory(
 ): Promise<ProductCategoryItem> {
   return apiRequest(`/api/v1/admin/categories/${id}`, productCategoryItemSchema, {
     method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Partial update of a product category (Admin)
+ */
+export async function patchAdminProductCategory(
+  token: string,
+  id: number,
+  data: UpdateProductCategoryRequest
+): Promise<ProductCategoryItem> {
+  return apiRequest(`/api/v1/admin/categories/${id}`, productCategoryItemSchema, {
+    method: "PATCH",
     body: JSON.stringify(data),
   });
 }
@@ -56,3 +80,4 @@ export async function deleteAdminProductCategory(
     method: "DELETE",
   });
 }
+

@@ -16,6 +16,10 @@ import { bannerListResponseSchema } from "../../schemas/bannerSchema";
 import { notificationListResponseSchema } from "../../schemas/notificationSchema";
 import { auditLogListResponseSchema } from "../../schemas/logSchema";
 import { subscriptionPlanSchema } from "../../schemas/subscriptionSchema";
+import { commerceSettingsSchema } from "../../schemas/commerceSchema";
+import { payoutListResponseSchema } from "../../schemas/payoutSchema";
+import { organizationSchema } from "../../schemas/organizationSchema";
+import { donationLedgerResponseSchema } from "../../schemas/donationSchema";
 
 const FIXTURES_DIR = join(__dirname, "fixtures");
 const LIVE = process.argv.includes("--live");
@@ -42,7 +46,12 @@ const CASES: ValidationCase[] = [
   { name: "notifications", schema: notificationListResponseSchema, fixture: "notifications.json", livePath: "/api/v1/notifications?page=1&limit=5" },
   { name: "logs", schema: auditLogListResponseSchema, fixture: "logs.json", livePath: "/api/v1/admin/logs?page=1&limit=5" },
   { name: "subscriptionPlan", schema: subscriptionPlanSchema, fixture: "subscription-plan.json" },
+  { name: "commerceSettings", schema: commerceSettingsSchema, fixture: "commerce-settings.json", livePath: "/api/v1/admin/commerce/settings" },
+  { name: "payouts", schema: payoutListResponseSchema, fixture: "payouts.json", livePath: "/api/v1/admin/payouts" },
+  { name: "organization", schema: organizationSchema, fixture: "organization.json" },
+  { name: "donations", schema: donationLedgerResponseSchema, fixture: "donations.json", livePath: "/api/v1/admin/donations" },
 ];
+
 
 function loadFixture(name: string): unknown {
   const raw = readFileSync(join(FIXTURES_DIR, name), "utf-8");

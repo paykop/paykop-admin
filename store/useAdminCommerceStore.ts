@@ -4,6 +4,8 @@ import {
   UpdateCommerceSettings,
   CommissionBatchItem,
   CommissionBatchDetailResponse,
+  SellerCommissionOverrideRequest,
+  SellerCommissionOverride,
 } from "../schemas/commerceSchema";
 import {
   fetchCommerceSettings,
@@ -11,6 +13,7 @@ import {
   fetchCommissionBatches,
   fetchCommissionBatchDetail,
   markCommissionBatchPaid,
+  setSellerCommissionOverride,
 } from "../services/commerceService";
 import { getErrorMessage } from "../lib/errors";
 
@@ -40,8 +43,14 @@ interface AdminCommerceState {
   ) => Promise<void>;
   fetchBatchDetail: (getToken: () => Promise<string | null>, id: number) => Promise<void>;
   markBatchPaid: (getToken: () => Promise<string | null>, id: number) => Promise<void>;
+  setSellerOverride: (
+    getToken: () => Promise<string | null>,
+    sellerId: string,
+    data: SellerCommissionOverrideRequest
+  ) => Promise<SellerCommissionOverride>;
   clearSelectedBatch: () => void;
 }
+
 
 export const useAdminCommerceStore = create<AdminCommerceState>((set, get) => ({
   settings: null,
@@ -124,5 +133,12 @@ export const useAdminCommerceStore = create<AdminCommerceState>((set, get) => ({
     }
   },
 
+  setSellerOverride: async (getToken, sellerId, data) => {
+    const token = await getToken();
+    if (!token) throw new Error("No token provided");
+    return setSellerCommissionOverride(token, sellerId, data);
+  },
+
   clearSelectedBatch: () => set({ selectedBatch: null }),
 }));
+

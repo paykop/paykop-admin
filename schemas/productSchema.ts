@@ -13,12 +13,14 @@ export const productResponseSchema = z.object({
   // July 2026: images is now a native JSON array (was serialised string)
   images: z.union([z.array(z.string()), z.string()]).optional().default([]),
   status: z.string(),
+  gst_rate_bps: z.number().optional().default(1800),
+  hsn_code: z.string().nullable().optional(),
   // July 2026: dynamic rating fields
   average_rating: z.number().optional().default(0),
   review_count: z.number().optional().default(0),
   // July 2026: reviews now included in GET /products/:id detail
   reviews: z.array(z.unknown()).optional().default([]),
-});
+}).passthrough();
 
 export const productListResponseSchema = z.object({
   products: z.array(productResponseSchema),
@@ -47,13 +49,15 @@ export const adminProductListItemSchema = z.object({
   category: z.string().optional().default(""),
   delivery_scope: z.string().nullable().optional(),
   is_cod_allowed: z.boolean().optional().default(false),
+  gst_rate_bps: z.number().optional().default(1800),
+  hsn_code: z.string().nullable().optional(),
   // July 2026: images as native JSON array
   images: z.union([z.array(z.string()), z.string()]).optional().default([]),
   status: z.string(),
   // July 2026: dynamic rating fields
   average_rating: z.number().optional().default(0),
   review_count: z.number().optional().default(0),
-});
+}).passthrough();
 
 export const adminProductListResponseSchema = z.object({
   products: z.array(adminProductListItemSchema),
@@ -62,3 +66,4 @@ export const adminProductListResponseSchema = z.object({
 
 export type AdminProductListItem = z.infer<typeof adminProductListItemSchema>;
 export type AdminProductListResponse = z.infer<typeof adminProductListResponseSchema>;
+

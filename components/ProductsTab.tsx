@@ -17,7 +17,7 @@ export default function ProductsTab() {
   const { getToken } = useAuth();
   const backendUser = useUserStore((s) => s.backendUser);
   const canDelete = isAdmin(backendUser?.role);
-  const [filterStatus, setFilterStatus] = useState<string>("pending");
+  const [filterStatus, setFilterStatus] = useState<string>("approved");
   const { products, loading, fetchProducts, updateProductStatus, deleteProductAction } = useAdminProductsStore();
   const [processingId, setProcessingId] = useState<number | null>(null);
 
@@ -55,8 +55,10 @@ export default function ProductsTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Products Management</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Moderate marketplace products and update their visibility.</p>
+        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Catalog moderation — products</h2>
+        <p className="text-sm text-slate-500 mt-0.5">
+          New seller listings go live immediately. Use this view to take down or restore visibility.
+        </p>
       </div>
 
       <div className="flex gap-2 flex-wrap">
@@ -125,7 +127,7 @@ export default function ProductsTab() {
                               variant="outline"
                               className="h-7 px-2 rounded border border-emerald-200 hover:bg-emerald-50 text-emerald-600 text-[10px] inline-flex items-center gap-1 cursor-pointer"
                             >
-                              <Check className="w-3 h-3" /> Approve
+                              <Check className="w-3 h-3" /> Restore live
                             </Button>
                           )}
                           {filterStatus !== "rejected" && (

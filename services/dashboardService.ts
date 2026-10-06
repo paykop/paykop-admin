@@ -22,3 +22,11 @@ export async function fetchAdminMetrics(_token: string): Promise<AdminMetrics> {
   return apiRequest("/api/v1/admin/metrics", adminMetricsSchema, {
   });
 }
+
+/**
+ * Fetch analytics statistics via /admin/analytics (alias of /admin/dashboard)
+ */
+export async function fetchAnalytics(_token: string): Promise<DashboardResponse> {
+  return apiRequest("/api/v1/admin/analytics", dashboardResponseSchema);
+}
+

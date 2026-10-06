@@ -20,7 +20,7 @@ export default function ServicesTab() {
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<string>("pending");
+  const [filterStatus, setFilterStatus] = useState<string>("approved");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [processingId, setProcessingId] = useState<number | string | null>(null);
@@ -90,8 +90,10 @@ export default function ServicesTab() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Service Listings Moderation</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Approve, reject, or remove professional service listings submitted by providers.</p>
+        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Catalog moderation — services</h2>
+        <p className="text-sm text-slate-500 mt-0.5">
+          Provider services publish live on create. Take down, reject, or restore listings here.
+        </p>
       </div>
 
       {/* Tabs Row */}
@@ -170,7 +172,7 @@ export default function ServicesTab() {
                               variant="outline"
                               className="h-7 px-2 rounded border border-emerald-200 hover:bg-emerald-50 text-emerald-600 text-[10px] inline-flex items-center gap-1 cursor-pointer"
                             >
-                              <Check className="w-3 h-3" /> Approve
+                              <Check className="w-3 h-3" /> Restore live
                             </Button>
                           )}
                           {filterStatus !== "rejected" && (
@@ -311,7 +313,7 @@ export default function ServicesTab() {
                         onClick={() => handleUpdateStatus(selectedService.id, "approved")}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-9 px-4 rounded-xl text-xs flex items-center gap-1 shadow-sm shadow-emerald-500/10 cursor-pointer"
                       >
-                        <Check className="w-3.5 h-3.5" /> Approve Listing
+                        <Check className="w-3.5 h-3.5" /> Restore listing
                       </Button>
                     )}
                     {selectedService.status !== "rejected" && (

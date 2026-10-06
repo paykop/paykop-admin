@@ -5,14 +5,10 @@ import {
   Banknote,
   CheckCircle2,
   Clock,
-  Building2,
   Loader2,
-  AlertCircle,
   X,
   Plus,
-  ArrowRight,
   ShieldCheck,
-  Send,
   Eye,
 } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
@@ -33,12 +29,19 @@ export default function PayoutsTab() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState<"all" | "pending" | "completed">("all");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [runModalOpen, setRunModalOpen] = useState(false);
   const [selectedOrgId, setSelectedOrgId] = useState("");
-  const [periodStart, setPeriodStart] = useState("");
-  const [periodEnd, setPeriodEnd] = useState("");
+  const [periodStart, setPeriodStart] = useState(() => {
+    const now = new Date();
+    const past = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return past.toISOString().split("T")[0];
+  });
+  const [periodEnd, setPeriodEnd] = useState(() => {
+    return new Date().toISOString().split("T")[0];
+  });
   const [previewData, setPreviewData] = useState<PayoutPreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [batchSubmitting, setBatchSubmitting] = useState(false);
@@ -50,52 +53,53 @@ export default function PayoutsTab() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  const loadPayouts = async () => {
-    setLoading(true);
-    setErrorMsg("");
-    try {
-      const token = await getToken();
-      if (!token) return;
-      const res = await fetchAdminPayouts(token, {
+  useEffect(() => {
+    let ignore = false;
+    getToken().then((token) => {
+      if (!token || ignore) return;
+      return fetchAdminPayouts(token, {
         page,
         limit: 20,
         status: activeFilter === "all" ? undefined : activeFilter,
       });
-      setPayouts(res.payouts || []);
-      setTotal(res.total || 0);
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Failed to load payouts ledger");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadOrganizations = async () => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-      const res = await fetchOrganizations(token, 1, 100, "verified");
-      setOrgs(res.organizations || []);
-      if (res.organizations && res.organizations.length > 0) {
-        setSelectedOrgId(res.organizations[0].id);
+    }).then((res) => {
+      if (res && !ignore) {
+        setPayouts(res.payouts || []);
+        setTotal(res.total || 0);
+        setLoading(false);
       }
-    } catch (err) {
+    }).catch((err: unknown) => {
+      if (!ignore) {
+        setErrorMsg(err instanceof Error ? err.message : "Failed to load payouts ledger");
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      ignore = true;
+    };
+  }, [getToken, page, activeFilter, refreshKey]);
+
+  useEffect(() => {
+    let ignore = false;
+    getToken().then((token) => {
+      if (!token || ignore) return;
+      return fetchOrganizations(token, 1, 100, "verified");
+    }).then((res) => {
+      if (res && !ignore) {
+        setOrgs(res.organizations || []);
+        if (res.organizations && res.organizations.length > 0) {
+          setSelectedOrgId(res.organizations[0].id);
+        }
+      }
+    }).catch((err) => {
       console.error("Failed to load organizations for payouts:", err);
-    }
-  };
+    });
 
-  useEffect(() => {
-    loadPayouts();
-  }, [page, activeFilter]);
-
-  useEffect(() => {
-    loadOrganizations();
-    // Default period: past 30 days
-    const now = new Date();
-    const past = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    setPeriodStart(past.toISOString().split("T")[0]);
-    setPeriodEnd(now.toISOString().split("T")[0]);
-  }, []);
+    return () => {
+      ignore = true;
+    };
+  }, [getToken]);
 
   const handlePreview = async () => {
     if (!selectedOrgId || !periodStart || !periodEnd) {
@@ -131,7 +135,8 @@ export default function PayoutsTab() {
       setSuccessMsg("Payout batch created successfully in pending status.");
       setRunModalOpen(false);
       setPreviewData(null);
-      loadPayouts();
+      setLoading(true);
+      setRefreshKey((k) => k + 1);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Failed to run payout batch");
     } finally {
@@ -150,7 +155,8 @@ export default function PayoutsTab() {
       setSuccessMsg("Payout settlement successfully approved via RazorpayX.");
       setApproveModalOpen(false);
       setTargetPayout(null);
-      loadPayouts();
+      setLoading(true);
+      setRefreshKey((k) => k + 1);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Failed to approve payout");
     } finally {
@@ -168,7 +174,7 @@ export default function PayoutsTab() {
             Organization Payout Settlements
           </h1>
           <p className="text-sm text-gray-500">
-            Audit, initiate, and disburse batched RazorpayX settlement transfers to verified NGO bank accounts.
+            Audit, initiate, and disburse batched RazorpayX settlement transfers to verified NGO bank accounts ({total} total).
           </p>
         </div>
 
@@ -208,6 +214,7 @@ export default function PayoutsTab() {
           onClick={() => {
             setActiveFilter("all");
             setPage(1);
+            setLoading(true);
           }}
           className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
             activeFilter === "all" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -219,6 +226,7 @@ export default function PayoutsTab() {
           onClick={() => {
             setActiveFilter("pending");
             setPage(1);
+            setLoading(true);
           }}
           className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
             activeFilter === "pending"
@@ -232,6 +240,7 @@ export default function PayoutsTab() {
           onClick={() => {
             setActiveFilter("completed");
             setPage(1);
+            setLoading(true);
           }}
           className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
             activeFilter === "completed"

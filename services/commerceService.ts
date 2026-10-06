@@ -4,10 +4,13 @@ import {
   commissionBatchListResponseSchema,
   commissionBatchDetailResponseSchema,
   commerceActionResponseSchema,
+  sellerCommissionOverrideSchema,
   CommerceSettings,
   UpdateCommerceSettings,
   CommissionBatchListResponse,
   CommissionBatchDetailResponse,
+  SellerCommissionOverrideRequest,
+  SellerCommissionOverride,
 } from "../schemas/commerceSchema";
 
 export async function fetchCommerceSettings(_token: string): Promise<CommerceSettings> {
@@ -63,3 +66,19 @@ export async function markCommissionBatchPaid(token: string, id: number): Promis
     }
   );
 }
+
+export async function setSellerCommissionOverride(
+  token: string,
+  sellerId: string,
+  data: SellerCommissionOverrideRequest
+): Promise<SellerCommissionOverride> {
+  return apiRequest(
+    `/api/v1/admin/sellers/${sellerId}/commission-override`,
+    sellerCommissionOverrideSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    }
+  );
+}
+
