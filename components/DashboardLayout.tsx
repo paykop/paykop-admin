@@ -18,7 +18,52 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const { isLoaded, isSignedIn, sessionStatus, getToken, refreshSession, logout } = useAuth();
   const { backendUser, loading, error, fetchProfile } = useUserStore();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Restore saved desktop collapsed preference
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("paykop_sidebar_collapsed");
+      if (saved !== null) {
+        setCollapsed(saved === "true");
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setMobileOpen((prev) => !prev);
+    } else {
+      setCollapsed((prev) => {
+        const next = !prev;
+        try {
+          localStorage.setItem("paykop_sidebar_collapsed", String(next));
+        } catch {
+          // Ignore
+        }
+        return next;
+      });
+    }
+  };
+
+  // Keyboard shortcut Ctrl+B / Cmd+B to toggle sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+          return;
+        }
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (isLoaded && sessionStatus === "unauthenticated") {
@@ -125,39 +170,61 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex text-slate-800">
-      <DashboardSidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="h-screen bg-slate-50 flex text-slate-800 overflow-hidden">
+      <DashboardSidebar
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={() => {
+          setCollapsed((prev) => {
+            const next = !prev;
+            try {
+              localStorage.setItem("paykop_sidebar_collapsed", String(next));
+            } catch {
+              // Ignore
+            }
+            return next;
+          });
+        }}
+      />
 
-      <main className="flex-1 overflow-y-auto max-h-screen flex flex-col min-w-0">
-        <header className="h-14 md:h-16 border-b border-slate-200 bg-white/80 backdrop-blur px-4 md:px-8 flex items-center justify-between sticky top-0 z-30 shrink-0 shadow-sm gap-3">
-          <div className="flex items-center gap-2 min-w-0" data-tour="header-handshake">
+      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
+        <header className="h-14 md:h-16 border-b border-slate-200 bg-white/80 backdrop-blur px-4 md:px-8 flex items-center justify-between shrink-0 shadow-sm gap-3 z-30">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            {/* Mobile menu button */}
             <button
               type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="md:hidden p-2 -ml-1 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0"
+              onClick={toggleSidebar}
+              className="md:hidden p-2 -ml-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer shrink-0"
               aria-label="Open menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5 text-slate-700" />
             </button>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider truncate hidden sm:inline">
-              Live Security Handshake Active
-            </span>
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider sm:hidden">
-              Live
-            </span>
+
+            <div className="flex items-center gap-2 min-w-0" data-tour="header-handshake">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider truncate hidden sm:inline">
+                Live Security Handshake Active
+              </span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider sm:hidden">
+                Live
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-4 shrink-0" data-tour="header-notifications">
             <NotificationPopover />
           </div>
         </header>
 
-        <div className="flex-1 p-4 md:p-8">
-          <div className="max-w-6xl mx-auto w-full">
-            <RequireRouteAccess>{children}</RequireRouteAccess>
+        {/* Page Content with custom sleek scrollbar starting strictly below the header */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-sidebar-scrollbar min-w-0">
+          <div className="p-4 md:p-8">
+            <div className="max-w-6xl mx-auto w-full">
+              <RequireRouteAccess>{children}</RequireRouteAccess>
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
