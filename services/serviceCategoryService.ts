@@ -19,8 +19,19 @@ export async function fetchAdminServiceCategories(_token: string): Promise<Servi
 }
 
 /**
+ * Fetch a single service category by ID (Admin)
+ */
+export async function fetchAdminServiceCategory(
+  _token: string,
+  id: number
+): Promise<ServiceCategoryItem> {
+  return apiRequest(`/api/v1/admin/service-categories/${id}`, serviceCategoryItemSchema);
+}
+
+/**
  * Create a new service category or subcategory (Admin)
  */
+
 export async function createAdminServiceCategory(
   token: string,
   data: CreateServiceCategoryRequest

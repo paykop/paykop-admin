@@ -18,6 +18,14 @@ export async function fetchAdminBanners(_token: string): Promise<BannerListRespo
 }
 
 /**
+ * Fetch a single banner by ID (public)
+ */
+export async function fetchBanner(id: number): Promise<BannerItem> {
+  return apiRequest(`/api/v1/banners/${id}`, bannerItemSchema);
+}
+
+
+/**
  * Create a new homepage banner (Admin)
  * Requires Idempotency-Key header which is automatically added by apiRequest
  */

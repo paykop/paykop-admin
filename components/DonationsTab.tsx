@@ -7,8 +7,6 @@ import {
   Clock,
   ExternalLink,
   ShieldCheck,
-  FileText,
-  Building2,
   Loader2,
   AlertCircle,
   X,
@@ -20,6 +18,7 @@ import {
   confirmDonationReconciliation,
 } from "../services/donationService";
 import { DonationLedgerItem } from "../schemas/donationSchema";
+import { safeExternalUrl } from "@/lib/safeExternalUrl";
 
 export default function DonationsTab() {
   const [donations, setDonations] = useState<DonationLedgerItem[]>([]);
@@ -27,44 +26,52 @@ export default function DonationsTab() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState<"all" | "online" | "pending_cash" | "reconciled">("all");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [selectedDonation, setSelectedDonation] = useState<DonationLedgerItem | null>(null);
   const [reconciling, setReconciling] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-
-  const loadDonations = async () => {
-    setLoading(true);
-    setErrorMsg("");
-    try {
-      let status: string | undefined;
-      let method: string | undefined;
-      let recon: string | undefined;
-
-      if (activeFilter === "online") {
-        method = "online";
-        status = "captured";
-      } else if (activeFilter === "pending_cash") {
-        method = "cash";
-        recon = "pending";
-      } else if (activeFilter === "reconciled") {
-        method = "cash";
-        recon = "reconciled";
-      }
-
-      const res = await fetchAdminDonations(page, 20, status, method, recon);
-      setDonations(res.donations);
-      setTotal(res.total);
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Failed to load donation ledger");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const depositProofHref = selectedDonation
+    ? safeExternalUrl(selectedDonation.deposit_proof_url)
+    : null;
 
   useEffect(() => {
-    loadDonations();
-  }, [page, activeFilter]);
+    let ignore = false;
+    let status: string | undefined;
+    let method: string | undefined;
+    let recon: string | undefined;
+
+    if (activeFilter === "online") {
+      method = "online";
+      status = "captured";
+    } else if (activeFilter === "pending_cash") {
+      method = "cash";
+      recon = "pending";
+    } else if (activeFilter === "reconciled") {
+      method = "cash";
+      recon = "reconciled";
+    }
+
+    fetchAdminDonations(page, 20, status, method, recon)
+      .then((res) => {
+        if (!ignore) {
+          setDonations(res.donations);
+          setTotal(res.total);
+          setLoading(false);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!ignore) {
+          setErrorMsg(err instanceof Error ? err.message : "Failed to load donation ledger");
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [page, activeFilter, refreshKey]);
 
   const handleConfirmReconcile = async () => {
     if (!selectedDonation) return;
@@ -74,7 +81,8 @@ export default function DonationsTab() {
       const updated = await confirmDonationReconciliation(selectedDonation.id);
       setSuccessMsg(`Donation of ₹${(updated.amount_paise / 100).toLocaleString("en-IN")} successfully reconciled!`);
       setSelectedDonation(null);
-      loadDonations();
+      setLoading(true);
+      setRefreshKey((k) => k + 1);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Failed to confirm reconciliation");
     } finally {
@@ -116,6 +124,7 @@ export default function DonationsTab() {
             onClick={() => {
               setActiveFilter(tab.id as typeof activeFilter);
               setPage(1);
+              setLoading(true);
             }}
             className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer ${
               activeFilter === tab.id
@@ -322,10 +331,10 @@ export default function DonationsTab() {
               {/* Deposit Slip Proof */}
               <div>
                 <label className="block font-bold text-gray-700 mb-1.5">Bank Deposit Slip / Proof</label>
-                {selectedDonation.deposit_proof_url ? (
+                {depositProofHref ? (
                   <div className="space-y-2">
                     <a
-                      href={selectedDonation.deposit_proof_url}
+                      href={depositProofHref}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-pink-600 font-bold hover:underline"

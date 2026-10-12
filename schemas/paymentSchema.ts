@@ -3,6 +3,8 @@ import { z } from "zod";
 export const paymentItemSchema = z.object({
   id: z.number(),
   order_id: z.number().nullable().optional(),
+  order_group_id: z.string().nullable().optional(),
+  parent_payment_id: z.number().nullable().optional(),
   amount: z.number(),
   currency: z.string().optional().default("INR"),
   status: z.string(),
@@ -28,6 +30,8 @@ export const refundResponseSchema = z.object({
 export const transactionItemSchema = z.object({
   payment_id: z.number(),
   order_id: z.number().nullable().optional(),
+  order_group_id: z.string().nullable().optional(),
+  parent_payment_id: z.number().nullable().optional(),
   buyer_id: z.string().optional().nullable(),
   seller_id: z.string().optional().nullable(),
   amount: z.number(),
@@ -36,6 +40,7 @@ export const transactionItemSchema = z.object({
   payment_type: z.string().optional(),
   created_at: z.string(),
 }).passthrough();
+
 
 export const transactionReportResponseSchema = z.object({
   transactions: z.array(transactionItemSchema),

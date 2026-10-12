@@ -41,6 +41,7 @@ export default function CommerceTab() {
     fetchBatches,
     fetchBatchDetail,
     markBatchPaid,
+    setSellerOverride,
     clearSelectedBatch,
   } = useAdminCommerceStore();
 
@@ -49,11 +50,21 @@ export default function CommerceTab() {
   const [markingPaidId, setMarkingPaidId] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
+  // Commission override modal state
+  const [overrideModalOpen, setOverrideModalOpen] = useState(false);
+  const [overrideSellerId, setOverrideSellerId] = useState("");
+  const [overridePercent, setOverridePercent] = useState("");
+  const [overrideReason, setOverrideReason] = useState("");
+  const [overrideFrom, setOverrideFrom] = useState("");
+  const [overrideTo, setOverrideTo] = useState("");
+  const [overrideSaving, setOverrideSaving] = useState(false);
+
   const [form, setForm] = useState({
     commissionPercent: "",
     settlementPeriod: "monthly" as "weekly" | "monthly" | "yearly",
     tierId: "",
     onboardingFeeRupees: "",
+    maxSellerDebitRupees: "",
   });
 
   const limit = 20;
@@ -73,6 +84,7 @@ export default function CommerceTab() {
         settlementPeriod: settings.default_settlement_period as "weekly" | "monthly" | "yearly",
         tierId: settings.default_commission_tier_id?.toString() || "",
         onboardingFeeRupees: (settings.default_onboarding_fee / 100).toFixed(2),
+        maxSellerDebitRupees: ((settings.max_seller_debit_paise ?? 250000) / 100).toFixed(2),
       });
     }
   }
@@ -83,6 +95,7 @@ export default function CommerceTab() {
 
     const commissionBps = Math.round(parseFloat(form.commissionPercent || "0") * 100);
     const onboardingPaise = Math.round(parseFloat(form.onboardingFeeRupees || "0") * 100);
+    const maxDebitPaise = Math.round(parseFloat(form.maxSellerDebitRupees || "2500") * 100);
     const tierId = form.tierId.trim() ? Number(form.tierId) : null;
 
     if (Number.isNaN(commissionBps) || commissionBps < 0 || commissionBps > 10000) {
@@ -95,6 +108,7 @@ export default function CommerceTab() {
       default_settlement_period: form.settlementPeriod,
       default_commission_tier_id: tierId,
       default_onboarding_fee: Number.isNaN(onboardingPaise) ? 0 : onboardingPaise,
+      max_seller_debit_paise: Number.isNaN(maxDebitPaise) ? 250000 : maxDebitPaise,
     };
 
     setSaving(true);
@@ -107,6 +121,50 @@ export default function CommerceTab() {
       setSaving(false);
     }
   };
+
+  const handleCreateOverride = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canManage) return;
+
+    const sellerId = overrideSellerId.trim();
+    const rateBps = Math.round(parseFloat(overridePercent || "0") * 100);
+    const reason = overrideReason.trim();
+
+    if (!sellerId) {
+      toast.error("Seller ID is required.");
+      return;
+    }
+    if (Number.isNaN(rateBps) || rateBps < 0 || rateBps > 10000) {
+      toast.error("Override commission rate must be between 0% and 100%.");
+      return;
+    }
+    if (!reason) {
+      toast.error("Reason is required.");
+      return;
+    }
+
+    setOverrideSaving(true);
+    try {
+      await setSellerOverride(getToken, sellerId, {
+        commission_rate_bps: rateBps,
+        reason,
+        effective_from: overrideFrom ? new Date(overrideFrom).toISOString() : undefined,
+        effective_to: overrideTo ? new Date(overrideTo).toISOString() : null,
+      });
+      toast.success(`Commission override active for ${sellerId}`);
+      setOverrideModalOpen(false);
+      setOverrideSellerId("");
+      setOverridePercent("");
+      setOverrideReason("");
+      setOverrideFrom("");
+      setOverrideTo("");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to apply commission override."));
+    } finally {
+      setOverrideSaving(false);
+    }
+  };
+
 
   const openBatchDetail = async (id: number) => {
     setDetailOpen(true);
@@ -219,6 +277,24 @@ export default function CommerceTab() {
                 className="w-full px-3 py-2 border rounded-lg disabled:opacity-60"
               />
             </div>
+            <div>
+              <label className="block font-semibold mb-1 text-slate-500">Max Seller Debt Ceiling (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                disabled={!canManage}
+                value={form.maxSellerDebitRupees}
+                onChange={(e) => setForm({ ...form, maxSellerDebitRupees: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg disabled:opacity-60"
+                placeholder="2500.00"
+              />
+              {settings?.max_seller_debit_paise !== undefined && (
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Threshold before negative COD balance blocks orders ({formatPaise(settings.max_seller_debit_paise)})
+                </p>
+              )}
+            </div>
             {canManage && (
               <div className="md:col-span-2">
                 <Button
@@ -242,9 +318,23 @@ export default function CommerceTab() {
       </section>
 
       <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Settlement Batches</h3>
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Settlement Batches</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Periodic marketplace commission disbursement batches</p>
+          </div>
+          {canManage && (
+            <Button
+              type="button"
+              onClick={() => setOverrideModalOpen(true)}
+              className="h-9 px-3.5 bg-slate-900 text-white hover:bg-slate-800 rounded-lg text-xs font-semibold cursor-pointer"
+            >
+              <Store className="w-3.5 h-3.5 mr-1.5" />
+              Seller Commission Override
+            </Button>
+          )}
         </div>
+
         {batchesError && (
           <div className="mx-6 mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
             {batchesError}
@@ -379,6 +469,7 @@ export default function CommerceTab() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-[10px]">Payment</TableHead>
+                    <TableHead className="text-[10px]">Kind</TableHead>
                     <TableHead className="text-[10px]">Gross</TableHead>
                     <TableHead className="text-[10px]">Fee</TableHead>
                     <TableHead className="text-[10px]">Net</TableHead>
@@ -389,6 +480,11 @@ export default function CommerceTab() {
                   {selectedBatch.entries.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell>#{entry.payment_id}</TableCell>
+                      <TableCell>
+                        <span className="font-mono text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                          {entry.entry_kind || "sale"}
+                        </span>
+                      </TableCell>
                       <TableCell>{formatPaise(entry.gross_amount)}</TableCell>
                       <TableCell>{formatPaise(entry.platform_fee)}</TableCell>
                       <TableCell>{formatPaise(entry.seller_net)}</TableCell>
@@ -399,6 +495,94 @@ export default function CommerceTab() {
               </Table>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Seller Commission Override Dialog */}
+      <Dialog open={overrideModalOpen} onOpenChange={setOverrideModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold">Set Merchant Commission Override</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateOverride} className="space-y-4 text-xs">
+            <p className="text-slate-500">
+              Apply a custom promotional or negotiated commission rate for a specific merchant. This closes any currently active override.
+            </p>
+            <div>
+              <label className="block font-semibold mb-1 text-slate-700">Merchant User ID *</label>
+              <input
+                type="text"
+                required
+                value={overrideSellerId}
+                onChange={(e) => setOverrideSellerId(e.target.value)}
+                placeholder="usr_1785509283100"
+                className="w-full px-3 py-2 border rounded-lg font-mono text-xs"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold mb-1 text-slate-700">Commission Rate (%) *</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                required
+                value={overridePercent}
+                onChange={(e) => setOverridePercent(e.target.value)}
+                placeholder="3.00"
+                className="w-full px-3 py-2 border rounded-lg text-xs"
+              />
+              <span className="text-[10px] text-slate-400">e.g. 3.00% = 300 basis points</span>
+            </div>
+            <div>
+              <label className="block font-semibold mb-1 text-slate-700">Reason / Justification *</label>
+              <textarea
+                required
+                rows={2}
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                placeholder="Promotional festival launch negotiated fee"
+                className="w-full px-3 py-2 border rounded-lg text-xs"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block font-semibold mb-1 text-slate-700">Effective From (optional)</label>
+                <input
+                  type="date"
+                  value={overrideFrom}
+                  onChange={(e) => setOverrideFrom(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-xs"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold mb-1 text-slate-700">Effective To (optional)</label>
+                <input
+                  type="date"
+                  value={overrideTo}
+                  onChange={(e) => setOverrideTo(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-xs"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOverrideModalOpen(false)}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={overrideSaving}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold cursor-pointer"
+              >
+                {overrideSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save Override"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

@@ -15,7 +15,6 @@ import {
   Building2,
   FileText,
   Plus,
-  ShieldCheck,
   CreditCard,
   CheckCircle2,
   XCircle,
@@ -26,6 +25,9 @@ import { getErrorMessage } from "../lib/errors";
 import RoleAccessBanner from "./RoleAccessBanner";
 
 const STATUS_FILTERS = ["all", "submitted", "verified", "rejected", "draft"] as const;
+
+type OrgType = "ngo" | "trust" | "section8_company" | "individual_fundraiser";
+type OrgCategory = "education" | "health" | "animal_welfare" | "disaster_relief" | "religious" | "other";
 
 export default function OrganizationsTab() {
   const { getToken } = useAuth();
@@ -54,8 +56,8 @@ export default function OrganizationsTab() {
 
   // New Organization Form State
   const [formLegalName, setFormLegalName] = useState("");
-  const [formOrgType, setFormOrgType] = useState<"ngo" | "trust" | "section8_company" | "individual_fundraiser">("ngo");
-  const [formCategory, setFormCategory] = useState<"education" | "health" | "animal_welfare" | "disaster_relief" | "religious" | "other">("education");
+  const [formOrgType, setFormOrgType] = useState<OrgType>("ngo");
+  const [formCategory, setFormCategory] = useState<OrgCategory>("education");
   const [formRegNo, setFormRegNo] = useState("");
   const [formPAN, setFormPAN] = useState("");
   const [formIs80G, setFormIs80G] = useState(false);
@@ -595,7 +597,7 @@ export default function OrganizationsTab() {
                 </label>
                 <select
                   value={formOrgType}
-                  onChange={(e) => setFormOrgType(e.target.value as any)}
+                  onChange={(e) => setFormOrgType(e.target.value as OrgType)}
                   className="w-full p-2 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none capitalize"
                 >
                   <option value="ngo">NGO</option>
@@ -611,7 +613,7 @@ export default function OrganizationsTab() {
                 </label>
                 <select
                   value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value as any)}
+                  onChange={(e) => setFormCategory(e.target.value as OrgCategory)}
                   className="w-full p-2 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none capitalize"
                 >
                   <option value="education">Education</option>

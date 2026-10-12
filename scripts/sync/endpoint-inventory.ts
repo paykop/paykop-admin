@@ -40,6 +40,7 @@ export const ENDPOINT_INVENTORY: EndpointEntry[] = [
 
   // Dashboard
   { domain: "Dashboard", method: "GET", path: "/api/v1/admin/dashboard", serviceFn: "fetchDashboardStats", serviceFile: "dashboardService.ts", schema: "dashboardSchema", ui: "/", status: "synced" },
+  { domain: "Dashboard", method: "GET", path: "/api/v1/admin/analytics", serviceFn: "fetchAnalytics", serviceFile: "dashboardService.ts", schema: "dashboardSchema", ui: "/", status: "synced", notes: "Alias of /admin/dashboard" },
   { domain: "Dashboard", method: "GET", path: "/api/v1/admin/metrics", serviceFn: "fetchAdminMetrics", serviceFile: "dashboardService.ts", schema: "dashboardSchema", ui: "/", status: "synced" },
   { domain: "Health", method: "GET", path: "/health", serviceFn: "fetchServerHealth", serviceFile: "userService.ts", schema: "inline", ui: "/devtools", status: "synced" },
 
@@ -61,13 +62,16 @@ export const ENDPOINT_INVENTORY: EndpointEntry[] = [
   { domain: "Products", method: "DELETE", path: "/api/v1/admin/products/:id", serviceFn: "deleteAdminProduct", serviceFile: "productService.ts", schema: "productSchema", ui: "/products", status: "synced" },
 
   // Product categories
-  { domain: "ProductCategories", method: "GET", path: "/api/v1/admin/categories", serviceFn: "fetchAdminProductCategories", serviceFile: "productCategoryService.ts", schema: "productCategorySchema", ui: "/categories", status: "pending-verify" },
-  { domain: "ProductCategories", method: "POST", path: "/api/v1/admin/categories", serviceFn: "createAdminProductCategory", serviceFile: "productCategoryService.ts", schema: "productCategorySchema", ui: "/categories", status: "pending-verify" },
-  { domain: "ProductCategories", method: "PUT", path: "/api/v1/admin/categories/:id", serviceFn: "updateAdminProductCategory", serviceFile: "productCategoryService.ts", schema: "productCategorySchema", ui: "/categories", status: "pending-verify" },
-  { domain: "ProductCategories", method: "DELETE", path: "/api/v1/admin/categories/:id", serviceFn: "deleteAdminProductCategory", serviceFile: "productCategoryService.ts", schema: "productCategorySchema", ui: "/categories", status: "pending-verify" },
+  { domain: "ProductCategories", method: "GET", path: "/api/v1/admin/categories", serviceFn: "fetchAdminProductCategories", serviceFile: "productCategoryService.ts", schema: "productCategorySchema", ui: "/categories", status: "synced" },
+  { domain: "ProductCategories", method: "GET", path: "/api/v1/admin/categories/:id", serviceFn: "fetchAdminProductCategory", serviceFile: "productCategoryService.ts", schema: "productCategorySchema", ui: "/categories", status: "synced" },
+  { domain: "ProductCategories", method: "POST", path: "/api/v1/admin/categories", serviceFn: "createAdminProductCategory", serviceFile: "productCategoryService.ts", schema: "productCategorySchema", ui: "/categories", status: "synced" },
+  { domain: "ProductCategories", method: "PUT", path: "/api/v1/admin/categories/:id", serviceFn: "updateAdminProductCategory", serviceFile: "productCategoryService.ts", schema: "productCategorySchema", ui: "/categories", status: "synced" },
+  { domain: "ProductCategories", method: "PATCH", path: "/api/v1/admin/categories/:id", serviceFn: "patchAdminProductCategory", serviceFile: "productCategoryService.ts", schema: "productCategorySchema", ui: "/categories", status: "service-only", notes: "Available for partial updates" },
+  { domain: "ProductCategories", method: "DELETE", path: "/api/v1/admin/categories/:id", serviceFn: "deleteAdminProductCategory", serviceFile: "productCategoryService.ts", schema: "productCategorySchema", ui: "/categories", status: "synced" },
 
   // Banners
   { domain: "Banners", method: "GET", path: "/api/v1/banners?only_active=false", serviceFn: "fetchAdminBanners", serviceFile: "bannerService.ts", schema: "bannerSchema", ui: "/banners", status: "synced", notes: "Public list endpoint for admin read" },
+  { domain: "Banners", method: "GET", path: "/api/v1/banners/:id", serviceFn: "fetchBanner", serviceFile: "bannerService.ts", schema: "bannerSchema", ui: "/banners", status: "synced", notes: "Public banner detail endpoint" },
   { domain: "Banners", method: "POST", path: "/api/v1/admin/banners", serviceFn: "createAdminBanner", serviceFile: "bannerService.ts", schema: "bannerSchema", ui: "/banners", status: "synced" },
   { domain: "Banners", method: "PUT", path: "/api/v1/admin/banners/:id", serviceFn: "updateAdminBanner", serviceFile: "bannerService.ts", schema: "bannerSchema", ui: "/banners", status: "synced" },
   { domain: "Banners", method: "DELETE", path: "/api/v1/admin/banners/:id", serviceFn: "deleteAdminBanner", serviceFile: "bannerService.ts", schema: "bannerSchema", ui: "/banners", status: "synced" },
@@ -98,6 +102,7 @@ export const ENDPOINT_INVENTORY: EndpointEntry[] = [
   { domain: "Commerce", method: "GET", path: "/api/v1/admin/commissions/batches", serviceFn: "fetchCommissionBatches", serviceFile: "commerceService.ts", schema: "commerceSchema", ui: "/commerce", status: "synced" },
   { domain: "Commerce", method: "GET", path: "/api/v1/admin/commissions/batches/:id", serviceFn: "fetchCommissionBatchDetail", serviceFile: "commerceService.ts", schema: "commerceSchema", ui: "/commerce", status: "synced" },
   { domain: "Commerce", method: "PATCH", path: "/api/v1/admin/commissions/batches/:id/mark-paid", serviceFn: "markCommissionBatchPaid", serviceFile: "commerceService.ts", schema: "commerceSchema", ui: "/commerce", status: "synced" },
+  { domain: "Commerce", method: "POST", path: "/api/v1/admin/sellers/:id/commission-override", serviceFn: "setSellerCommissionOverride", serviceFile: "commerceService.ts", schema: "commerceSchema", ui: "/commerce", status: "synced", notes: "Custom merchant commission override" },
 
   // Subscriptions
   { domain: "Subscriptions", method: "GET", path: "/api/v1/admin/subscriptions/plans", serviceFn: "fetchSubscriptionPlans", serviceFile: "subscriptionService.ts", schema: "subscriptionSchema", ui: "/subscriptions", status: "synced" },
@@ -123,11 +128,29 @@ export const ENDPOINT_INVENTORY: EndpointEntry[] = [
   { domain: "Blood", method: "GET", path: "/api/v1/donations/blood/:requestId/matching-donors", serviceFn: "fetchMatchingDonors", serviceFile: "bloodService.ts", schema: "bloodSchema", ui: "/blood", status: "synced" },
 
   // Service categories
-  { domain: "ServiceCategories", method: "GET", path: "/api/v1/admin/service-categories", serviceFn: "fetchAdminServiceCategories", serviceFile: "serviceCategoryService.ts", schema: "serviceCategorySchema", ui: "/service-categories", status: "pending-verify" },
-  { domain: "ServiceCategories", method: "POST", path: "/api/v1/admin/service-categories", serviceFn: "createAdminServiceCategory", serviceFile: "serviceCategoryService.ts", schema: "serviceCategorySchema", ui: "/service-categories", status: "pending-verify" },
-  { domain: "ServiceCategories", method: "PUT", path: "/api/v1/admin/service-categories/:id", serviceFn: "updateAdminServiceCategory", serviceFile: "serviceCategoryService.ts", schema: "serviceCategorySchema", ui: "/service-categories", status: "pending-verify" },
+  { domain: "ServiceCategories", method: "GET", path: "/api/v1/admin/service-categories", serviceFn: "fetchAdminServiceCategories", serviceFile: "serviceCategoryService.ts", schema: "serviceCategorySchema", ui: "/service-categories", status: "synced" },
+  { domain: "ServiceCategories", method: "GET", path: "/api/v1/admin/service-categories/:id", serviceFn: "fetchAdminServiceCategory", serviceFile: "serviceCategoryService.ts", schema: "serviceCategorySchema", ui: "/service-categories", status: "synced" },
+  { domain: "ServiceCategories", method: "POST", path: "/api/v1/admin/service-categories", serviceFn: "createAdminServiceCategory", serviceFile: "serviceCategoryService.ts", schema: "serviceCategorySchema", ui: "/service-categories", status: "synced" },
+  { domain: "ServiceCategories", method: "PUT", path: "/api/v1/admin/service-categories/:id", serviceFn: "updateAdminServiceCategory", serviceFile: "serviceCategoryService.ts", schema: "serviceCategorySchema", ui: "/service-categories", status: "synced" },
   { domain: "ServiceCategories", method: "PATCH", path: "/api/v1/admin/service-categories/:id", serviceFn: "patchAdminServiceCategory", serviceFile: "serviceCategoryService.ts", schema: "serviceCategorySchema", ui: "/service-categories", status: "service-only", notes: "Available via store patchCategory for partial updates" },
-  { domain: "ServiceCategories", method: "DELETE", path: "/api/v1/admin/service-categories/:id", serviceFn: "deleteAdminServiceCategory", serviceFile: "serviceCategoryService.ts", schema: "serviceCategorySchema", ui: "/service-categories", status: "pending-verify" },
+  { domain: "ServiceCategories", method: "DELETE", path: "/api/v1/admin/service-categories/:id", serviceFn: "deleteAdminServiceCategory", serviceFile: "serviceCategoryService.ts", schema: "serviceCategorySchema", ui: "/service-categories", status: "synced" },
+
+  // Organizations (donation NGOs)
+  { domain: "Organizations", method: "GET", path: "/api/v1/admin/organizations", serviceFn: "fetchOrganizations", serviceFile: "organizationService.ts", schema: "organizationSchema", ui: "/organizations", status: "synced" },
+  { domain: "Organizations", method: "GET", path: "/api/v1/admin/organizations/:id", serviceFn: "fetchOrganization", serviceFile: "organizationService.ts", schema: "organizationSchema", ui: "/organizations", status: "synced" },
+  { domain: "Organizations", method: "POST", path: "/api/v1/admin/organizations", serviceFn: "createOrganization", serviceFile: "organizationService.ts", schema: "organizationSchema", ui: "/organizations", status: "synced" },
+  { domain: "Organizations", method: "PATCH", path: "/api/v1/admin/organizations/:id/kyc", serviceFn: "updateOrganizationKYC", serviceFile: "organizationService.ts", schema: "organizationSchema", ui: "/organizations", status: "synced" },
+
+  // Donation ledger
+  { domain: "Donations", method: "GET", path: "/api/v1/admin/donations", serviceFn: "fetchAdminDonations", serviceFile: "donationService.ts", schema: "donationSchema", ui: "/donations", status: "synced" },
+  { domain: "Donations", method: "PATCH", path: "/api/v1/admin/donations/:id/reconcile-confirm", serviceFn: "confirmDonationReconciliation", serviceFile: "donationService.ts", schema: "donationSchema", ui: "/donations", status: "synced" },
+
+  // Payouts
+  { domain: "Payouts", method: "GET", path: "/api/v1/admin/payouts", serviceFn: "fetchAdminPayouts", serviceFile: "payoutService.ts", schema: "payoutSchema", ui: "/payouts", status: "synced" },
+  { domain: "Payouts", method: "GET", path: "/api/v1/admin/payouts/:id", serviceFn: "fetchAdminPayout", serviceFile: "payoutService.ts", schema: "payoutSchema", ui: "/payouts", status: "synced" },
+  { domain: "Payouts", method: "POST", path: "/api/v1/admin/organizations/:id/payouts/preview", serviceFn: "previewOrgPayout", serviceFile: "payoutService.ts", schema: "payoutSchema", ui: "/payouts", status: "synced" },
+  { domain: "Payouts", method: "POST", path: "/api/v1/admin/organizations/:id/payouts/run", serviceFn: "runOrgPayoutBatch", serviceFile: "payoutService.ts", schema: "payoutSchema", ui: "/payouts", status: "synced" },
+  { domain: "Payouts", method: "PATCH", path: "/api/v1/admin/payouts/:id/approve", serviceFn: "approveAdminPayout", serviceFile: "payoutService.ts", schema: "payoutSchema", ui: "/payouts", status: "synced" },
 
   // Services moderation
   { domain: "Services", method: "GET", path: "/api/v1/admin/services", serviceFn: "fetchAdminServices", serviceFile: "serviceService.ts", schema: "serviceSchema", ui: "/services", status: "synced" },
@@ -144,6 +167,7 @@ export const ENDPOINT_INVENTORY: EndpointEntry[] = [
   // Upload
   { domain: "Upload", method: "POST", path: "/api/v1/storage/presigned-url", serviceFn: "uploadImageFile", serviceFile: "uploadService.ts", schema: "inline", ui: "/categories,/service-categories", status: "synced" },
 ];
+
 
 export function inventorySummary() {
   const total = ENDPOINT_INVENTORY.length;

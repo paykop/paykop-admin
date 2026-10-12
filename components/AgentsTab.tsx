@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import {
   Loader2, Eye, Mail, Phone, User, CalendarDays, ShieldCheck, ShieldOff,
-  Plus, UserMinus, UserPlus, Users, BadgeCheck, Handshake,
+  Plus, UserMinus, UserPlus, Users, BadgeCheck,
 } from "lucide-react";
 
 import { AgentAssignmentSummary } from "../schemas/agentSchema";
@@ -212,7 +212,6 @@ export default function AgentsTab() {
                 <TableHead className="p-4 pl-6 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Agent</TableHead>
                 <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Status</TableHead>
                 <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Managed Sellers</TableHead>
-                <TableHead className="p-4 text-slate-400 font-bold uppercase tracking-wider text-[10px]">Trial Grants</TableHead>
                 <TableHead className="p-4 pr-6 text-right font-bold text-slate-400 uppercase tracking-wider text-[10px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -249,9 +248,6 @@ export default function AgentsTab() {
                     </TableCell>
                     <TableCell className="p-4 text-slate-600 font-bold">
                       {agent.active_managed_sellers ?? 0}
-                    </TableCell>
-                    <TableCell className="p-4 text-slate-600 font-bold">
-                      {agent.trial_grants ?? 0}
                     </TableCell>
                     <TableCell className="p-4 pr-6 text-right whitespace-nowrap">
                       {processingId === agent.id ? (
@@ -296,7 +292,7 @@ export default function AgentsTab() {
               })}
               {agents.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="p-8 text-center text-slate-400">
+                  <TableCell colSpan={4} className="p-8 text-center text-slate-400">
                     No agents found. Create or promote a user to get started.
                   </TableCell>
                 </TableRow>
@@ -363,11 +359,6 @@ export default function AgentsTab() {
                     icon={<Users className="w-3.5 h-3.5" />}
                     label="Managed Sellers"
                     value={String(selectedAgent.active_managed_sellers ?? 0)}
-                  />
-                  <InfoRow
-                    icon={<Handshake className="w-3.5 h-3.5" />}
-                    label="Trial Grants"
-                    value={String(selectedAgent.trial_grants ?? 0)}
                   />
                   <InfoRow
                     icon={<BadgeCheck className="w-3.5 h-3.5" />}

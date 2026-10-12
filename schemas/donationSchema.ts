@@ -23,7 +23,8 @@ export const donationLedgerItemSchema = z.object({
   reconciled_by: z.string().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
-});
+}).passthrough();
+
 
 export const donationLedgerResponseSchema = z.object({
   donations: z.array(donationLedgerItemSchema),
