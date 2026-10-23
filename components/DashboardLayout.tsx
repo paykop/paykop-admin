@@ -219,7 +219,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Page Content with custom sleek scrollbar starting strictly below the header */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden custom-sidebar-scrollbar min-w-0">
           <div className="p-4 md:p-8">
-            <div className="max-w-6xl mx-auto w-full">
+            <div className="max-w-7xl mx-auto w-full">
               <RequireRouteAccess>{children}</RequireRouteAccess>
             </div>
           </div>
