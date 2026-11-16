@@ -27,14 +27,21 @@ export const serviceCategoryItemSchema: z.ZodType<ServiceCategoryItem> = z.lazy(
     bg_color: z.string().nullable().optional(),
     is_featured: z.boolean().optional().default(false),
     image_url: z.string().nullable().optional(),
-    children: z.array(z.lazy(() => serviceCategoryItemSchema)).optional().default([]),
-  })
+    children: z.array(z.lazy(() => serviceCategoryItemSchema)).nullable().optional().transform((val) => val ?? []).default([]),
+  }).passthrough()
 );
 
 export const serviceCategoryListResponseSchema = z
-  .array(serviceCategoryItemSchema)
-  .nullable()
-  .optional()
+  .union([
+    z.array(serviceCategoryItemSchema),
+    z.object({
+      categories: z.array(serviceCategoryItemSchema).optional(),
+      data: z.array(serviceCategoryItemSchema).optional(),
+    }).transform((val) => val.categories ?? val.data ?? []),
+    z.record(z.string(), z.unknown()).transform(() => []),
+    z.null().transform(() => []),
+    z.undefined().transform(() => []),
+  ])
   .transform((val) => val ?? []);
 
 export const createServiceCategoryRequestSchema = z.object({

@@ -83,8 +83,12 @@ async function proxyRequest(
     }
   }
 
+  if (upstream.status === 204) {
+    return new NextResponse(null, { status: 204 });
+  }
+
   if (isJson) {
-    return NextResponse.json(body ?? {}, { status: upstream.status });
+    return NextResponse.json(body, { status: upstream.status });
   }
 
   return new NextResponse(typeof body === "string" ? body : "", {

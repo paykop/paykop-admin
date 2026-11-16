@@ -66,8 +66,14 @@ export async function apiRequest<TSchema extends z.ZodTypeAny>(
     // Validate response using Zod schema to ensure data contract matching
     const result = schema.safeParse(data);
     if (!result.success) {
-      console.error("API response schema validation failed:", result.error.format());
-      throw new Error("API response did not match the expected contract.");
+      const issueDetails = result.error.issues
+        .map((issue) => `${issue.path.join(".") || "root"}: ${issue.message}`)
+        .join("; ");
+      console.error(`API response schema validation failed for ${endpoint}:`, {
+        issues: result.error.issues,
+        data,
+      });
+      throw new Error(`API response for ${endpoint} did not match expected contract: ${issueDetails}`);
     }
 
     return result.data;

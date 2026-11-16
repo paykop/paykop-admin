@@ -4,6 +4,7 @@ import { z } from "zod";
 export interface ProductCategoryItem {
   id: number;
   name: string;
+  vertical?: string | null;
   parent_id?: number | null;
   image_url?: string | null;
   children?: ProductCategoryItem[];
@@ -15,18 +16,26 @@ export const productCategoryItemSchema: z.ZodType<ProductCategoryItem> = z.lazy(
   z.object({
     id: z.number(),
     name: z.string(),
+    vertical: z.string().nullable().optional(),
     parent_id: z.number().nullable().optional(),
     image_url: z.string().nullable().optional(),
-    children: z.array(z.lazy(() => productCategoryItemSchema)).optional().default([]),
+    children: z.array(z.lazy(() => productCategoryItemSchema)).nullable().optional().transform((val) => val ?? []).default([]),
     created_at: z.string().optional(),
     updated_at: z.string().optional(),
-  })
+  }).passthrough()
 );
 
 export const productCategoryListResponseSchema = z
-  .array(productCategoryItemSchema)
-  .nullable()
-  .optional()
+  .union([
+    z.array(productCategoryItemSchema),
+    z.object({
+      categories: z.array(productCategoryItemSchema).optional(),
+      data: z.array(productCategoryItemSchema).optional(),
+    }).transform((val) => val.categories ?? val.data ?? []),
+    z.record(z.string(), z.unknown()).transform(() => []),
+    z.null().transform(() => []),
+    z.undefined().transform(() => []),
+  ])
   .transform((val) => val ?? []);
 
 export const createProductCategoryRequestSchema = z.object({
