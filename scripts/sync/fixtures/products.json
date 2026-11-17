@@ -1,0 +1,15 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "seller_id": "seller-1",
+      "title": "Test Product",
+      "price": 99900,
+      "stock": 10,
+      "category": "Electronics",
+      "images": [],
+      "status": "pending"
+    }
+  ],
+  "total": 1
+}

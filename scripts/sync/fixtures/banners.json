@@ -1,0 +1,13 @@
+{
+  "banners": [
+    {
+      "id": 1,
+      "title": "Summer Sale",
+      "image_url": "https://cdn.paykop.com/banner.jpg",
+      "type": "product",
+      "link_id": "1",
+      "is_active": true
+    }
+  ],
+  "total": 1
+}

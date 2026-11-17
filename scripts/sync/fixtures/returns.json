@@ -1,0 +1,39 @@
+{
+  "returns": [
+    {
+      "id": 1,
+      "order_id": 101,
+      "buyer_id": "usr_buyer_12345",
+      "seller_id": "usr_seller_67890",
+      "resolution": "refund",
+      "reason_code": "damaged_goods",
+      "reason_text": "Produce was bruised and overripe upon arrival.",
+      "quantity": 2,
+      "quantity_milli": 2000,
+      "vertical": "farm",
+      "status": "escalated",
+      "refund_amount_paise": 18000,
+      "payment_id": 42,
+      "inspection_ok": false,
+      "inspection_note": "Packaging crushed in transit",
+      "decision_note": null,
+      "decided_by": null,
+      "escalated_at": "2026-11-16T12:00:00Z",
+      "decided_at": null,
+      "received_at": null,
+      "created_at": "2026-11-16T10:00:00Z",
+      "updated_at": "2026-11-16T12:00:00Z",
+      "attachments": [
+        {
+          "id": 1,
+          "file_key": "returns/proof_1.jpg",
+          "file_url": "https://media.paykop.com/returns/proof_1.jpg",
+          "created_at": "2026-11-16T10:00:00Z"
+        }
+      ]
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 20
+}

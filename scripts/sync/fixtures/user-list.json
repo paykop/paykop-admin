@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "id": "user-1",
+      "email": "buyer@example.com",
+      "first_name": "Test",
+      "last_name": "Buyer",
+      "role": "buyer",
+      "is_onboarded": true,
+      "kyc_status": "verified"
+    }
+  ],
+  "total": 1
+}

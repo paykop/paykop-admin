@@ -1,0 +1,8 @@
+{
+  "default_commission_rate_bps": 800,
+  "default_settlement_period": "monthly",
+  "default_commission_tier_id": 1,
+  "default_onboarding_fee": 0,
+  "max_seller_debit_paise": 250000,
+  "updated_at": "2026-08-20T10:00:00Z"
+}

@@ -1,0 +1,21 @@
+{
+  "donations": [
+    {
+      "id": "f5a7c912-3456-4789-abcd-0123456789ab",
+      "org_id": "e4b6c891-9214-41d3-a9d8-c13f640e0123",
+      "payment_method": "online",
+      "amount_paise": 50000,
+      "donor_name": "Rahul Verma",
+      "donor_phone_masked": "XXXXXX9876",
+      "tax_eligible": true,
+      "financial_year": "2026-2027",
+      "payment_status": "captured",
+      "reconciliation_status": "not_applicable",
+      "created_at": "2026-08-15T12:00:00Z",
+      "updated_at": "2026-08-15T12:00:00Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 20
+}

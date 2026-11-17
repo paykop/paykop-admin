@@ -1,0 +1,50 @@
+{
+  "name": "paykop-admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test:e2e": "playwright test",
+    "test:session": "tsx --test lib/auth/server.test.ts",
+    "sync:auth": "tsx scripts/sync/auth-smoke.ts",
+    "sync:schemas": "tsx scripts/sync/schema-validate.ts",
+    "sync:schemas:live": "tsx scripts/sync/schema-validate.ts --live",
+    "sync:matrix": "tsx scripts/sync/feature-matrix.ts --dry-run",
+    "sync:matrix:live": "tsx scripts/sync/feature-matrix.ts",
+    "sync:crosscheck": "tsx scripts/sync/go-crosscheck.ts",
+    "sync:deploy": "tsx scripts/sync/deploy-verify.ts",
+    "sync:all": "npm run test:session && npm run sync:deploy && npm run sync:auth && npm run sync:schemas && npm run sync:crosscheck"
+  },
+  "dependencies": {
+    "axios": "^1.18.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "driver.js": "1.4.0",
+    "env": "^0.0.2",
+    "lucide-react": "^1.21.0",
+    "next": "16.2.9",
+    "radix-ui": "^1.6.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "shadcn": "^4.11.0",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "tailwindcss": "^4",
+    "tsx": "^4.20.5",
+    "typescript": "^5"
+  }
+}
