@@ -11,11 +11,14 @@ import {
 } from "../schemas/productCategorySchema";
 
 /**
- * Fetch all product categories & subcategories (Admin)
+ * Fetch all product categories & subcategories (Admin), optionally filtered by vertical ('paykop' | 'farm')
  */
-export async function fetchAdminProductCategories(_token: string): Promise<ProductCategoryItem[]> {
-  return apiRequest("/api/v1/admin/categories", productCategoryListResponseSchema, {
-  });
+export async function fetchAdminProductCategories(
+  _token: string,
+  vertical?: string
+): Promise<ProductCategoryItem[]> {
+  const query = vertical && vertical !== "all" ? `?vertical=${encodeURIComponent(vertical)}` : "";
+  return apiRequest(`/api/v1/admin/categories${query}`, productCategoryListResponseSchema);
 }
 
 /**
@@ -80,4 +83,3 @@ export async function deleteAdminProductCategory(
     method: "DELETE",
   });
 }
-

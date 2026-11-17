@@ -20,6 +20,7 @@ import { commerceSettingsSchema } from "../../schemas/commerceSchema";
 import { payoutListResponseSchema } from "../../schemas/payoutSchema";
 import { organizationSchema } from "../../schemas/organizationSchema";
 import { donationLedgerResponseSchema } from "../../schemas/donationSchema";
+import { returnListResponseSchema } from "../../schemas/returnSchema";
 
 const FIXTURES_DIR = join(__dirname, "fixtures");
 const LIVE = process.argv.includes("--live");
@@ -50,6 +51,7 @@ const CASES: ValidationCase[] = [
   { name: "payouts", schema: payoutListResponseSchema, fixture: "payouts.json", livePath: "/api/v1/admin/payouts" },
   { name: "organization", schema: organizationSchema, fixture: "organization.json" },
   { name: "donations", schema: donationLedgerResponseSchema, fixture: "donations.json", livePath: "/api/v1/admin/donations" },
+  { name: "returns", schema: returnListResponseSchema, fixture: "returns.json", livePath: "/api/v1/admin/returns?page=1&limit=5" },
 ];
 
 

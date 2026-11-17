@@ -16,10 +16,12 @@ import {
 
 interface AdminProductCategoriesState {
   categories: ProductCategoryItem[];
+  verticalFilter: "all" | "paykop" | "farm";
   loading: boolean;
   error: string | null;
 
-  fetchCategories: (getToken: () => Promise<string | null>) => Promise<void>;
+  setVerticalFilter: (filter: "all" | "paykop" | "farm") => void;
+  fetchCategories: (getToken: () => Promise<string | null>, vertical?: "all" | "paykop" | "farm") => Promise<void>;
   createCategory: (
     getToken: () => Promise<string | null>,
     data: CreateProductCategoryRequest
@@ -37,15 +39,19 @@ interface AdminProductCategoriesState {
 
 export const useAdminProductCategoriesStore = create<AdminProductCategoriesState>((set, get) => ({
   categories: [],
+  verticalFilter: "all",
   loading: false,
   error: null,
 
-  fetchCategories: async (getToken) => {
+  setVerticalFilter: (verticalFilter) => set({ verticalFilter }),
+
+  fetchCategories: async (getToken, vertical) => {
+    const targetVertical = vertical ?? get().verticalFilter;
     set({ loading: true, error: null });
     try {
       const token = await getToken();
       if (!token) throw new Error("No token");
-      const resp = await fetchAdminProductCategories(token);
+      const resp = await fetchAdminProductCategories(token, targetVertical);
       set({ categories: Array.isArray(resp) ? resp : [], error: null });
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 404) {

@@ -6,9 +6,11 @@ import { getErrorMessage } from "../lib/errors";
 
 interface AdminProductsStore {
   products: ProductListItem[];
+  verticalFilter: "all" | "paykop" | "farm";
   loading: boolean;
   error: string | null;
   lastStatus?: string;
+  setVerticalFilter: (filter: "all" | "paykop" | "farm") => void;
   fetchProducts: (getToken: () => Promise<string | null>, status?: string) => Promise<void>;
   updateProductStatus: (getToken: () => Promise<string | null>, id: number, status: string) => Promise<void>;
   deleteProductAction: (getToken: () => Promise<string | null>, id: number) => Promise<void>;
@@ -16,9 +18,11 @@ interface AdminProductsStore {
 
 export const useAdminProductsStore = create<AdminProductsStore>((set, get) => ({
   products: [],
+  verticalFilter: "all",
   loading: false,
   error: null,
   lastStatus: undefined,
+  setVerticalFilter: (verticalFilter) => set({ verticalFilter }),
   fetchProducts: async (getToken, status) => {
     set({ loading: true, error: null, lastStatus: status });
     try {

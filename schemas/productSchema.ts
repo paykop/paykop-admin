@@ -9,16 +9,26 @@ export const productResponseSchema = z.object({
   description: z.string().optional().default(""),
   price: z.number(),
   stock: z.number(),
+  stock_milli: z.number().optional().default(0),
+  vertical: z.string().optional().default("paykop"),
+  unit: z.string().optional().default("piece"),
+  pack_size: z.number().optional().default(1),
+  min_order_qty_milli: z.number().optional().default(1000),
+  qty_step_milli: z.number().optional().default(1000),
+  farm_name: z.string().nullable().optional(),
+  origin_location: z.string().nullable().optional(),
+  harvest_date: z.string().nullable().optional(),
+  shelf_life_days: z.number().optional().default(7),
+  farming_method: z.string().optional().default("natural"),
+  is_tax_exempt: z.boolean().optional().default(false),
   category: z.string().optional().default(""),
-  // July 2026: images is now a native JSON array (was serialised string)
+  category_id: z.number().nullable().optional(),
   images: z.union([z.array(z.string()), z.string()]).optional().default([]),
   status: z.string(),
   gst_rate_bps: z.number().optional().default(1800),
   hsn_code: z.string().nullable().optional(),
-  // July 2026: dynamic rating fields
   average_rating: z.number().optional().default(0),
   review_count: z.number().optional().default(0),
-  // July 2026: reviews now included in GET /products/:id detail
   reviews: z.array(z.unknown()).optional().default([]),
 }).passthrough();
 
@@ -46,15 +56,25 @@ export const adminProductListItemSchema = z.object({
   description: z.string().optional().default(""),
   price: z.number(),
   stock: z.number(),
+  stock_milli: z.number().optional().default(0),
+  vertical: z.string().optional().default("paykop"),
+  unit: z.string().optional().default("piece"),
+  pack_size: z.number().optional().default(1),
+  min_order_qty_milli: z.number().optional().default(1000),
+  qty_step_milli: z.number().optional().default(1000),
+  farm_name: z.string().nullable().optional(),
+  origin_location: z.string().nullable().optional(),
+  harvest_date: z.string().nullable().optional(),
+  shelf_life_days: z.number().optional().default(7),
+  farming_method: z.string().optional().default("natural"),
+  is_tax_exempt: z.boolean().optional().default(false),
   category: z.string().optional().default(""),
   delivery_scope: z.string().nullable().optional(),
   is_cod_allowed: z.boolean().optional().default(false),
   gst_rate_bps: z.number().optional().default(1800),
   hsn_code: z.string().nullable().optional(),
-  // July 2026: images as native JSON array
   images: z.union([z.array(z.string()), z.string()]).optional().default([]),
   status: z.string(),
-  // July 2026: dynamic rating fields
   average_rating: z.number().optional().default(0),
   review_count: z.number().optional().default(0),
 }).passthrough();
@@ -66,4 +86,3 @@ export const adminProductListResponseSchema = z.object({
 
 export type AdminProductListItem = z.infer<typeof adminProductListItemSchema>;
 export type AdminProductListResponse = z.infer<typeof adminProductListResponseSchema>;
-

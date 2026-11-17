@@ -96,6 +96,11 @@ export const ENDPOINT_INVENTORY: EndpointEntry[] = [
   { domain: "Payments", method: "POST", path: "/api/v1/admin/refunds/:id", serviceFn: "processRefund", serviceFile: "paymentService.ts", schema: "paymentSchema", ui: "/payments", status: "synced" },
   { domain: "Payments", method: "GET", path: "/api/v1/admin/reports/transactions", serviceFn: "fetchTransactionReport", serviceFile: "paymentService.ts", schema: "paymentSchema", ui: "/payments", status: "synced" },
 
+  // Returns & Dispute Mediation
+  { domain: "Returns", method: "GET", path: "/api/v1/admin/returns", serviceFn: "fetchAdminReturns", serviceFile: "returnService.ts", schema: "returnSchema", ui: "/returns", status: "synced" },
+  { domain: "Returns", method: "GET", path: "/api/v1/admin/returns/:id", serviceFn: "fetchAdminReturnDetail", serviceFile: "returnService.ts", schema: "returnSchema", ui: "/returns", status: "synced" },
+  { domain: "Returns", method: "POST", path: "/api/v1/admin/returns/:id/resolve", serviceFn: "resolveAdminReturn", serviceFile: "returnService.ts", schema: "returnSchema", ui: "/returns", status: "synced" },
+
   // Commerce
   { domain: "Commerce", method: "GET", path: "/api/v1/admin/commerce/settings", serviceFn: "fetchCommerceSettings", serviceFile: "commerceService.ts", schema: "commerceSchema", ui: "/commerce", status: "synced" },
   { domain: "Commerce", method: "PUT", path: "/api/v1/admin/commerce/settings", serviceFn: "updateCommerceSettings", serviceFile: "commerceService.ts", schema: "commerceSchema", ui: "/commerce", status: "synced" },
