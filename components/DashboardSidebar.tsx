@@ -36,6 +36,7 @@ import {
   Settings,
   Wrench,
   RotateCcw,
+  Sprout,
   type LucideIcon,
 } from "lucide-react";
 import { canAccessRoute } from "@/lib/rbac";
@@ -63,6 +64,7 @@ export default function DashboardSidebar({
     { id: "tickets", label: "Support Tickets", icon: Ticket, href: "/tickets" },
     { id: "products", label: "Products", icon: Package, href: "/products" },
     { id: "categories", label: "Product Categories", icon: FolderTree, href: "/categories" },
+    { id: "farm-sellers", label: "Farm Sellers", icon: Sprout, href: "/farm-sellers" },
     { id: "returns", label: "Returns & Disputes", icon: RotateCcw, href: "/returns" },
     { id: "banners", label: "Banners", icon: ImageIcon, href: "/banners" },
     { id: "users", label: "Users", icon: Users, href: "/users" },
