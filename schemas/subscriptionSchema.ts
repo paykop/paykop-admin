@@ -25,16 +25,20 @@ export const updateSubscriptionPlanRequestSchema = z.object({
 export const subscriptionHistoryItemSchema = z.object({
   id: z.number(),
   user_id: z.string(),
-  plan_id: z.number(),
+  plan_id: z.number().optional(),
   plan: z.string(),
   status: z.string(),
-  starts_at: z.string(),
-  expires_at: z.string(),
+  starts_at: z.string().nullable().optional(),
+  expires_at: z.string().nullable().optional(),
+  created_at: z.string().optional(),
 });
 
 export const subscriptionHistoryResponseSchema = z.object({
-  subscriptions: z.array(subscriptionHistoryItemSchema),
-  total: z.number(),
+  subscriptions: z
+    .array(subscriptionHistoryItemSchema)
+    .nullable()
+    .transform((v) => v ?? []),
+  total: z.number().optional().default(0),
 });
 
 export const subscriptionPlanActionResponseSchema = z.object({

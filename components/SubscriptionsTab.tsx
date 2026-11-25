@@ -350,8 +350,12 @@ export default function SubscriptionsTab() {
                       <TableCell className="p-4 pl-6 font-mono text-[11px]">{h.user_id}</TableCell>
                       <TableCell className="p-4 font-semibold text-slate-700">{h.plan}</TableCell>
                       <TableCell className="p-4 capitalize text-slate-600">{h.status}</TableCell>
-                      <TableCell className="p-4 text-slate-500">{new Date(h.starts_at).toLocaleString("en-IN")}</TableCell>
-                      <TableCell className="p-4 pr-6 text-slate-500">{new Date(h.expires_at).toLocaleString("en-IN")}</TableCell>
+                      <TableCell className="p-4 text-slate-500">
+                        {h.starts_at ? new Date(h.starts_at).toLocaleString("en-IN") : "—"}
+                      </TableCell>
+                      <TableCell className="p-4 pr-6 text-slate-500">
+                        {h.expires_at ? new Date(h.expires_at).toLocaleString("en-IN") : "—"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

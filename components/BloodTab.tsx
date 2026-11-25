@@ -77,7 +77,7 @@ export default function BloodTab() {
 
   // Initial fetch for emergency requests
   useEffect(() => {
-    fetchAdminBloodRequests(getToken, 1, 50, statusFilter);
+    fetchAdminBloodRequests(getToken, 1, 100, statusFilter);
   }, [getToken, statusFilter, fetchAdminBloodRequests]);
 
   // Initial fetch for donor directory when switching tab or filter
@@ -170,6 +170,12 @@ export default function BloodTab() {
 
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   const statusPills = ["all", "pending", "approved", "fulfilled", "cancelled", "rejected"];
+  const filteredRequests =
+    statusFilter === "all"
+      ? requests
+      : requests.filter(
+          (r) => (r.status || "pending").toLowerCase() === statusFilter.toLowerCase()
+        );
 
   return (
     <div className="space-y-6">
@@ -246,7 +252,7 @@ export default function BloodTab() {
               <div className="flex justify-center items-center h-64">
                 <Loader2 className="w-8 h-8 animate-spin text-red-500" />
               </div>
-            ) : requests.length === 0 ? (
+            ) : filteredRequests.length === 0 ? (
               <div className="p-12 text-center flex flex-col items-center justify-center gap-2">
                 <Droplet className="w-10 h-10 text-slate-300" />
                 <p className="text-slate-800 font-bold text-sm">No blood requests found</p>
@@ -267,7 +273,7 @@ export default function BloodTab() {
                     </TableRow>
                   </TableHeader>
                   <TableBody className="divide-y divide-slate-100">
-                    {requests.map((r) => (
+                    {filteredRequests.map((r) => (
                       <TableRow key={r.id} className="hover:bg-slate-50/50 transition border-b border-slate-100">
                         <TableCell className="p-4 pl-6 font-bold text-slate-800 flex items-center gap-3">
                           <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 font-black text-sm flex items-center justify-center shrink-0 border border-red-100 shadow-sm">
