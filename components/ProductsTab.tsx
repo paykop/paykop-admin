@@ -12,7 +12,7 @@ import { Check, X, Package, Loader2, Trash2, Sprout, ShoppingBag, Clock, Leaf } 
 import { toast } from "./ui/toast";
 import { getErrorMessage } from "../lib/errors";
 
-const PRODUCT_STATUSES = ["pending", "approved", "rejected", "removed"] as const;
+const PRODUCT_STATUSES = ["pending", "approved", "rejected"] as const;
 
 export default function ProductsTab() {
   const { getToken } = useAuth();
@@ -251,15 +251,6 @@ export default function ProductsTab() {
                                 className="h-7 px-2 rounded border border-amber-200 hover:bg-amber-50 text-amber-600 text-[10px] inline-flex items-center gap-1 cursor-pointer"
                               >
                                 <X className="w-3 h-3" /> Reject
-                              </Button>
-                            )}
-                            {filterStatus !== "removed" && (
-                              <Button
-                                onClick={() => handleUpdateStatus(p.id, "removed")}
-                                variant="outline"
-                                className="h-7 px-2 rounded border border-slate-200 hover:bg-slate-50 text-slate-600 text-[10px] inline-flex items-center gap-1 cursor-pointer"
-                              >
-                                Remove
                               </Button>
                             )}
                             {canDelete && (

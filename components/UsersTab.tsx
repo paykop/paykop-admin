@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import {
   Loader2, Edit, Eye, Mail, Phone, MapPin, ShieldCheck, ShieldOff,
   User, CalendarDays, BadgeCheck, CreditCard, LinkIcon, FileText,
-  LogIn, Star, Trophy, Award, Handshake, UserCog,
+  LogIn, Star, Trophy, Award, Handshake, UserCog, X,
 } from "lucide-react";
 import Link from "next/link";
 import SafeImage from "./SafeImage";
@@ -251,7 +251,14 @@ export default function UsersTab() {
 
       {/* VIEW DETAILS MODAL */}
       <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
-        <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-[560px] max-h-[85vh] overflow-y-auto p-0 rounded-2xl" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent
+          className={`w-full max-w-[calc(100%-2rem)] sm:max-w-[560px] max-h-[85vh] overflow-hidden p-0 rounded-2xl ${
+            selectedUser && !detailsLoading
+              ? "[&_[data-slot=dialog-close]]:text-white/80 [&_[data-slot=dialog-close]]:hover:text-white [&_[data-slot=dialog-close]]:hover:bg-white/10"
+              : ""
+          }`}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           {detailsLoading ? (
             <div className="flex justify-center items-center p-16"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
           ) : selectedUser ? (

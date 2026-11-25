@@ -44,10 +44,20 @@ export default function SupportTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getToken]);
 
-  const nonSupportUsers = (pickerUsers || []).filter((u) => {
-    const role = (u.role || "").toLowerCase();
-    return role !== "support" && role !== "admin";
-  });
+  const nonSupportUsers = (pickerUsers || [])
+    .filter((u) => {
+      const role = (u.role || "").toLowerCase();
+      return role !== "support" && role !== "admin";
+    })
+    .map((u) => {
+      const name = `${u.first_name || ""} ${u.last_name || ""}`.trim();
+      const contact = u.email || u.phone || "";
+      const roleTag = u.role ? ` (${u.role})` : "";
+      const label = name
+        ? `${name}${contact ? ` — ${contact}` : ""}${roleTag}`
+        : `${contact || u.id}${roleTag}`;
+      return { id: u.id, label };
+    });
 
   const handleOpenCreate = async () => {
     setFormError(null);
@@ -266,7 +276,7 @@ export default function SupportTab() {
                 <SelectContent>
                   {nonSupportUsers.map((u) => (
                     <SelectItem key={u.id} value={u.id}>
-                      {`${u.first_name} ${u.last_name}`.trim() || u.email || u.id}
+                      {u.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

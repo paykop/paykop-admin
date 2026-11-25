@@ -58,7 +58,7 @@ export default function CampaignsTab() {
     setFormData({
       title: campaign.title,
       description: campaign.description,
-      target_amount: campaign.target_amount || 0,
+      target_amount: (campaign.target_amount || 0) / 100,
       is_urgent: campaign.is_urgent,
       image_url: campaign.image_url || "",
       status: campaign.status || "pending",
@@ -75,7 +75,7 @@ export default function CampaignsTab() {
         title: formData.title,
         description: formData.description,
         image_url: formData.image_url || undefined,
-        target_amount: formData.target_amount,
+        target_amount: Math.round(Number(formData.target_amount) * 100),
         is_urgent: formData.is_urgent,
       };
 
@@ -289,13 +289,15 @@ export default function CampaignsTab() {
                 />
               </div>
               <div className="grid gap-2">
-                <label className="text-xs font-bold text-slate-700">Target Amount (paise) *</label>
+                <label className="text-xs font-bold text-slate-700">Target Amount (INR ₹) *</label>
                 <input
                   required
                   type="number"
                   min="0"
-                  value={formData.target_amount}
-                  onChange={(e) => setFormData({ ...formData, target_amount: parseInt(e.target.value) || 0 })}
+                  step="any"
+                  placeholder="e.g. 1000000 for ₹10 Lakhs"
+                  value={formData.target_amount || ""}
+                  onChange={(e) => setFormData({ ...formData, target_amount: parseFloat(e.target.value) || 0 })}
                   className="w-full text-sm p-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

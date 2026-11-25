@@ -77,12 +77,29 @@ export default function AgentsTab() {
       const role = (u.role || "").toLowerCase();
       return role !== "agent" && role !== "admin";
     })
-    .map((u) => ({
-      id: u.id,
-      label: `${u.first_name} ${u.last_name}`.trim() || u.email || u.phone || u.id,
-    }));
+    .map((u) => {
+      const name = `${u.first_name || ""} ${u.last_name || ""}`.trim();
+      const contact = u.email || u.phone || "";
+      const roleTag = u.role ? ` (${u.role})` : "";
+      const label = name
+        ? `${name}${contact ? ` — ${contact}` : ""}${roleTag}`
+        : `${contact || u.id}${roleTag}`;
+      return {
+        id: u.id,
+        label,
+      };
+    });
 
-  const sellerOptions = (pickerUsers || []).filter((u) => (u.role || "").toLowerCase() === "seller");
+  const sellerOptions = (pickerUsers || [])
+    .filter((u) => (u.role || "").toLowerCase() === "seller")
+    .map((u) => {
+      const name = `${u.first_name || ""} ${u.last_name || ""}`.trim();
+      const contact = u.email || u.phone || "";
+      return {
+        id: u.id,
+        label: name ? `${name}${contact ? ` — ${contact}` : ""}` : contact || u.id,
+      };
+    });
 
   const handleCreateAgent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -586,7 +603,7 @@ export default function AgentsTab() {
                 <SelectContent>
                   {sellerOptions.map((u) => (
                     <SelectItem key={u.id} value={u.id}>
-                      {`${u.first_name} ${u.last_name}`.trim() || u.email || u.phone || u.id}
+                      {u.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
